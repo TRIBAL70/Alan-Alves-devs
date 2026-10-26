@@ -1,0 +1,12 @@
+ALAN ALVES DEV TV - INSTALACAO NO GITHUB
+
+Este ZIP contem duas pastas na raiz: android-tv e .github
+
+1. No repositorio TRIBAL70/Alan-Alves-devs, crie uma ramificacao android-tv a partir de main.
+2. Abra a ramificacao android-tv e envie o CONTEUDO extraido deste ZIP (pastas android-tv e .github) mantendo a estrutura de pastas. Nao coloque o ZIP sem extrair.
+3. Abra Actions -> Compilar APK Android TV -> Run workflow -> Branch: android-tv -> Run workflow.
+4. Quando aparecer sucesso, abra o trabalho e baixe Artifacts -> Alan-Alves-Dev-TV-debug.
+5. Extraia o ZIP do artefato para obter app-debug.apk e instale na TCL Android TV.
+
+Nao apague nem substitua os arquivos Android existentes na raiz do repositorio. O novo app tem ID separado com.alanalves.devtv.
+IMPORTANTE: compilacao e funcionamento na TV ainda nao foram verificados. Suporte ao controle remoto e basico.
