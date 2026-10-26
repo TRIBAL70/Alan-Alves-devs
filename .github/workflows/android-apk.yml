@@ -1,16 +1,17 @@
 
 
+
 name: Construir Android APK
 
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+
     steps:
       - name: Baixar projeto
         uses: actions/checkout@v4
@@ -26,17 +27,20 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Configurar Android
-        uses: android-actions/setup-android@v3
-
       - name: Instalar dependencias
         run: npm install
+
+      - name: Corrigir dependencias Expo
+        run: npx expo install --fix --npm
 
       - name: Preparar projeto Android
         run: npx expo prebuild --platform android --non-interactive
 
       - name: Compilar APK
-        run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
 
       - name: Disponibilizar APK
         uses: actions/upload-artifact@v4
