@@ -1,7 +1,6 @@
 
 
-
-name: Construir Android APK
+name: Construir Android APK Release
 
 on:
   workflow_dispatch:
@@ -24,26 +23,29 @@ jobs:
       - name: Configurar Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '17'
 
       - name: Instalar dependencias
         run: npm install
 
-      - name: Corrigir dependencias Expo
+      - name: Corrigir dependencias
         run: npx expo install --fix --npm
 
-      - name: Preparar projeto Android
+      - name: Preparar Android
         run: npx expo prebuild --platform android --non-interactive
 
-      - name: Compilar APK
+      - name: Compilar APK Release
         working-directory: android
+        env:
+          NODE_ENV: production
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleRelease --no-daemon
 
-      - name: Disponibilizar APK
+      - name: Publicar APK
         uses: actions/upload-artifact@v4
         with:
-          name: Alan-Alves-Dev-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: Alan-Alves-Dev-Release
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
