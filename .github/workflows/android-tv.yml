@@ -2,6 +2,9 @@ name: Compilar APK Android TV
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - android-tv
 
 jobs:
   build:
