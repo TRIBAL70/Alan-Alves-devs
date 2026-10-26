@@ -1,50 +1,13 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, BackHandler, Linking, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { WebView } from 'react-native-webview';
-
-const URL = 'https://alan-alves-dev.lovable.app/';
-export default function App() {
-  const browser = useRef(null);
-  const [canGoBack, setCanGoBack] = useState(false);
-  const [error, setError] = useState(false);
-  useEffect(() => {
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (canGoBack) { browser.current?.goBack(); return true; }
-      return false;
-    });
-    return () => subscription.remove();
-  }, [canGoBack]);
-  const navigate = useCallback((request) => {
-    const uri = request.url || '';
-    if (/^(whatsapp:|mailto:|tel:|sms:|intent:)/i.test(uri) || /^https:\/\/(wa\.me|api\.whatsapp\.com)(\/|$)/i.test(uri)) {
-      Linking.openURL(uri).catch(() => {});
-      return false;
-    }
-    return /^(https?:\/\/|about:blank)/i.test(uri);
-  }, []);
-  return <SafeAreaView style={styles.container}>
-    <StatusBar backgroundColor="#050B1B" barStyle="light-content" />
-    {error ? <View style={styles.center}>
-      <Text style={styles.title}>Não foi possível carregar o site</Text>
-      <Text style={styles.subtitle}>Verifique sua internet e tente novamente.</Text>
-      <TouchableOpacity style={styles.button} onPress={() => { setError(false); browser.current?.reload(); }}>
-        <Text style={styles.buttonText}>Tentar novamente</Text>
-      </TouchableOpacity>
-    </View> : <WebView ref={browser} source={{uri:URL}} style={styles.webview}
-      javaScriptEnabled domStorageEnabled sharedCookiesEnabled startInLoadingState
-      renderLoading={() => <View style={styles.center}><ActivityIndicator color="#00D5FF" size="large" /></View>}
-      onNavigationStateChange={state => setCanGoBack(state.canGoBack)}
-      onShouldStartLoadWithRequest={navigate}
-      onError={() => setError(true)}
-      onHttpError={({nativeEvent}) => { if (nativeEvent.isForMainFrame && nativeEvent.statusCode >= 400) setError(true); }}
-      setSupportMultipleWindows={false} originWhitelist={['https://*','http://*']} />}
-  </SafeAreaView>;
+import React, {useEffect, useRef, useState} from 'react';
+import {BackHandler, Linking, Pressable, SafeAreaView, StatusBar, StyleSheet, Text, View} from 'react-native';
+import {WebView} from 'react-native-webview';
+const URL='https://alan-alves-dev.lovable.app/';
+export default function App(){
+ const [screen,setScreen]=useState('home'); const [error,setError]=useState(false); const browser=useRef(null); const [canGoBack,setCanGoBack]=useState(false);
+ useEffect(()=>{const sub=BackHandler.addEventListener('hardwareBackPress',()=>{if(screen==='web'){if(canGoBack){browser.current?.goBack();} else {setScreen('home');}return true;}return false;});return ()=>sub.remove();},[screen,canGoBack]);
+ const openSite=()=>{setError(false);setScreen('web');};
+ const openContact=()=>Linking.openURL('https://wa.me/5551999938323').catch(()=>{});
+ const navigation=({url})=>{if(/^(whatsapp:|mailto:|tel:|sms:|intent:)/i.test(url)||/^https:\/\/(wa\.me|api\.whatsapp\.com)(\/|$)/i.test(url)){Linking.openURL(url).catch(()=>{});return false;}return /^(https?:\/\/|about:blank)/i.test(url);};
+ return <SafeAreaView style={styles.root}><StatusBar hidden/>{screen==='home'?<View style={styles.home}><Text style={styles.kicker}>TECNOLOGIA • DESIGN • AUTOMAÇÃO</Text><Text style={styles.title}>ALAN ALVES <Text style={styles.highlight}>DEV</Text></Text><Text style={styles.intro}>Sites profissionais, soluções digitais e inteligência artificial.</Text><View style={styles.row}><Pressable hasTVPreferredFocus onPress={openSite} style={({focused})=>[styles.button,focused&&styles.focus]}><Text style={styles.buttonText}>ABRIR MEU SITE</Text></Pressable><Pressable onPress={openContact} style={({focused})=>[styles.button,styles.secondary,focused&&styles.focus]}><Text style={styles.buttonText}>CONTATO WHATSAPP</Text></Pressable></View><Text style={styles.tip}>Use as setas e OK do controle remoto para navegar. O site pode ter elementos que exigem mouse.</Text></View>:<View style={styles.webFrame}><View style={styles.topbar}><Pressable hasTVPreferredFocus onPress={()=>setScreen('home')} style={({focused})=>[styles.back,focused&&styles.focus]}><Text style={styles.buttonText}>← MENU INICIAL</Text></Pressable><Text style={styles.label}>ALAN ALVES DEV · SITE</Text></View>{error?<View style={styles.error}><Text style={styles.intro}>Não foi possível carregar o site. Verifique a conexão.</Text><Pressable hasTVPreferredFocus onPress={()=>{setError(false);browser.current?.reload();}} style={({focused})=>[styles.button,focused&&styles.focus]}><Text style={styles.buttonText}>TENTAR NOVAMENTE</Text></Pressable></View>:<WebView ref={browser} source={{uri:URL}} style={styles.webview} javaScriptEnabled domStorageEnabled startInLoadingState onNavigationStateChange={state=>setCanGoBack(state.canGoBack)} onShouldStartLoadWithRequest={navigation} onError={()=>setError(true)} setSupportMultipleWindows={false} />}</View>}</SafeAreaView>;
 }
-const styles = StyleSheet.create({
-  container:{flex:1,backgroundColor:'#050B1B'}, webview:{flex:1,backgroundColor:'#050B1B'},
-  center:{flex:1,alignItems:'center',justifyContent:'center',padding:24,backgroundColor:'#050B1B'},
-  title:{fontSize:20,fontWeight:'bold',color:'#FFF',textAlign:'center'},
-  subtitle:{fontSize:14,color:'#ADC4D9',textAlign:'center',marginTop:12,marginBottom:24},
-  button:{backgroundColor:'#006FFF',borderRadius:12,paddingHorizontal:22,paddingVertical:14},
-  buttonText:{color:'#FFF',fontWeight:'bold'}
-});
+const styles=StyleSheet.create({root:{flex:1,backgroundColor:'#050B1B'},home:{flex:1,justifyContent:'center',paddingHorizontal:90},kicker:{color:'#00D5FF',fontSize:18,fontWeight:'700',letterSpacing:3},title:{fontSize:70,fontWeight:'900',color:'#FFF',marginTop:14},highlight:{color:'#00D5FF'},intro:{color:'#D1DFEF',fontSize:25,marginTop:14,maxWidth:900},row:{flexDirection:'row',gap:22,marginTop:50},button:{paddingHorizontal:32,paddingVertical:22,borderWidth:2,borderColor:'#00D5FF',backgroundColor:'#0656B8',borderRadius:12,minWidth:280,alignItems:'center'},secondary:{backgroundColor:'#12213A'},focus:{borderColor:'#FFF',borderWidth:4,backgroundColor:'#007FE6',transform:[{scale:1.035}]},buttonText:{color:'#FFF',fontSize:20,fontWeight:'800'},tip:{color:'#90A8C2',fontSize:16,marginTop:38},webFrame:{flex:1},topbar:{height:74,backgroundColor:'#0C1A32',flexDirection:'row',alignItems:'center',paddingHorizontal:28,justifyContent:'space-between'},back:{paddingHorizontal:16,paddingVertical:10,borderWidth:2,borderColor:'#00D5FF',borderRadius:8},label:{color:'#D1DFEF',fontSize:17},webview:{flex:1,backgroundColor:'#050B1B'},error:{flex:1,alignItems:'center',justifyContent:'center',gap:20}});
