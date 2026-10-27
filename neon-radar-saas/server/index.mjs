@@ -35,7 +35,7 @@ async function userFrom(req){if(!SUPA||!ANON)return null;const m=/^Bearer\s+(\S+
 async function consumeQuota(req,user,kind='search'){
  const day=new Date().toISOString().slice(0,10);let limit=3;
  if(user&&SUPA&&ANON){
-  const r=await fetch(SUPA.replace(/\/$/,'')+'/rest/v1/rpc/consume_quota',{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+user.token,'Content-Type':'application/json'},body:JSON.stringify({p_kind:kind})});
+  const r=await fetch(SUPA.replace(/\/$/,'')+'/rest/v1/rpc/nr_consume_quota',{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+user.token,'Content-Type':'application/json'},body:JSON.stringify({p_kind:kind})});
   if(!r.ok){const obj=await r.json().catch(()=>({}));throw Object.assign(new Error('Controle de cotas indisponível. Configure a migração SQL. '+String(obj.message||'').slice(0,110)),{status:503});}
   const result=await r.json();if(result?.allowed!==true)throw Object.assign(new Error(ERROR_MSG.QUOTA),{status:429,code:'QUOTA'});
   return result;
