@@ -36,15 +36,17 @@ jobs:
       - name: Adaptar para Android TV
         run: python3 prepare_tv.py
 
-      - name: Compilar APK
+      - name: Compilar APK release com bundle JavaScript embarcado
+        env:
+          NODE_ENV: production
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleRelease --no-daemon
 
       - name: Disponibilizar APK
         uses: actions/upload-artifact@v4
         with:
-          name: Alan-Alves-Dev-Android-TV
-          path: android/app/build/outputs/apk/debug/*.apk
+          name: Alan-Alves-Dev-Android-TV-Release
+          path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
