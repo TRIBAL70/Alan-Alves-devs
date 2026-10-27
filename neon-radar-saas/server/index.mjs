@@ -15,6 +15,7 @@ const SERVICE=process.env.SUPABASE_SERVICE_ROLE_KEY||'';
 const OPENAI=process.env.OPENAI_API_KEY||'';
 const OPENAI_MODEL=process.env.OPENAI_MODEL||'gpt-4o-mini';
 const MAX_BODY=32_000; const REQ_TIMEOUT=12000;
+const PAID_API_AUTH=process.env.REQUIRE_AUTH_FOR_PAID_APIS!=='false';
 const traffic=new Map(), publicUsage=new Map();
 const FIELD_LIST='places.id,places.displayName,places.primaryTypeDisplayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.websiteUri,places.nationalPhoneNumber,places.businessStatus,places.currentOpeningHours,places.googleMapsUri,nextPageToken';
 const DETAILS='id,displayName,primaryTypeDisplayName,formattedAddress,location,rating,userRatingCount,websiteUri,nationalPhoneNumber,businessStatus,currentOpeningHours,regularOpeningHours,googleMapsUri,photos';
@@ -27,7 +28,7 @@ function validCoord(n,max=180){return typeof n==='number' && Number.isFinite(n) 
 function validPoint(a){return a && validCoord(a.lat,90)&&validCoord(a.lng,180);}
 const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
 function clip(s,max=180){return typeof s==='string'?s.trim().slice(0,max):'';}
-function clientIp(req){return String(req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown').slice(0,80);}
+function clientIp(req){return String(req.socket.remoteAddress||'unknown').slice(0,80);}
 function throttle(req){const ip=clientIp(req),now=Date.now(),key=ip+':'+Math.floor(now/60000);const count=(traffic.get(key)||0)+1;traffic.set(key,count);if(traffic.size>15000)for(const[k]of traffic)if(!k.endsWith(':'+Math.floor(now/60000)))traffic.delete(k);return count<=65;}
 async function fetchJSON(url,options={}){const resp=await fetch(url,{...options,signal:AbortSignal.timeout(REQ_TIMEOUT)});let data=await resp.json().catch(()=>({}));if(!resp.ok){const e=new Error(data.error?.message || 'Serviço externo indisponível');e.status=resp.status===429?429:resp.status>=500?502:400;throw e;}return data;}
 async function google(url,options={},mask){if(!GOOGLE)throw Object.assign(new Error(ERROR_MSG.NO_API),{status:503,code:'NOT_CONFIGURED'});return fetchJSON(url,{...options,headers:{'Content-Type':'application/json','X-Goog-Api-Key':GOOGLE,...(mask?{'X-Goog-FieldMask':mask}:{}),...(options.headers||{})}});}
@@ -37,19 +38,30 @@ async function consumeQuota(req,user,kind='search'){
  if(user&&SUPA&&ANON){
   const r=await fetch(SUPA.replace(/\/$/,'')+'/rest/v1/rpc/nr_consume_quota',{method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+user.token,'Content-Type':'application/json'},body:JSON.stringify({p_kind:kind})});
   if(!r.ok){const obj=await r.json().catch(()=>({}));throw Object.assign(new Error('Controle de cotas indisponível. Configure a migração SQL. '+String(obj.message||'').slice(0,110)),{status:503});}
-  const result=await r.json();if(result?.allowed!==true)throw Object.assign(new Error(ERROR_MSG.QUOTA),{status:429,code:'QUOTA'});
+  const result=await r.json();if(result?.allowed!==true){const upgrade=result?.reason==='upgrade_required';throw Object.assign(new Error(upgrade?'Recurso disponível no plano Profissional ou Empresarial.':ERROR_MSG.QUOTA),{status:upgrade?403:429,code:upgrade?'PLAN_REQUIRED':'QUOTA'});}
   return result;
  }
  const key=clientIp(req)+':'+day+':'+kind;const n=(publicUsage.get(key)||0)+1;if(n>limit)throw Object.assign(new Error(ERROR_MSG.QUOTA),{status:429,code:'QUOTA'});publicUsage.set(key,n);return {remaining:limit-n};
 }
 function normalize(p){return {id:p.id||'',name:p.displayName?.text||'Nome não informado',category:p.primaryTypeDisplayName?.text||'Categoria não informada',address:p.formattedAddress||null,lat:p.location?.latitude??null,lng:p.location?.longitude??null,rating:p.rating??null,reviews:p.userRatingCount??null,website:p.websiteUri||null,phone:p.nationalPhoneNumber||null,open:p.currentOpeningHours?.openNow??null,hours:p.regularOpeningHours?.weekdayDescriptions||p.currentOpeningHours?.weekdayDescriptions||null,status:p.businessStatus||null,mapsUri:p.googleMapsUri||null,photoCount:p.photos?.length||0,source:'google'};}
-function serverConfig(){return {google:!!GOOGLE,maps:!!GOOGLE_BROWSER,auth:!!SUPA&&!!ANON,ai:!!OPENAI,supabaseUrl:SUPA||null,supabaseAnonKey:ANON||null,googleBrowserKey:GOOGLE_BROWSER||null,demo:!GOOGLE,mode:!GOOGLE?'configuracao_pendente':'integracao_real',plans:['gratuito','profissional','empresarial']};}
+function serverConfig(){return {paidApiRequiresLogin:PAID_API_AUTH,google:!!GOOGLE,maps:!!GOOGLE_BROWSER,auth:!!SUPA&&!!ANON,ai:!!OPENAI,supabaseUrl:SUPA||null,supabaseAnonKey:ANON||null,googleBrowserKey:GOOGLE_BROWSER||null,demo:!GOOGLE,mode:!GOOGLE?'configuracao_pendente':'integracao_real',plans:['gratuito','profissional','empresarial']};}
 async function api(req,res,url){if(!throttle(req))return err(res,429,'RATE_LIMIT','Muitas solicitações. Tente novamente em instantes.');
  const method=req.method, pathname=url.pathname;
  if(method==='GET'&&pathname==='/api/health')return json(res,200,{status:'ok',version:'1.0.0'});
  if(method==='GET'&&pathname==='/api/config')return json(res,200,serverConfig());
  let data={};if(['POST','PUT','PATCH'].includes(method))try{data=await body(req);}catch(e){return err(res,e.status||400,'INVALID_JSON','Dados inválidos.');}
  const user=await userFrom(req);
+ if(method==='GET'&&pathname==='/api/usage'){
+  if(!user)return err(res,401,'AUTH',ERROR_MSG.AUTH);
+  if(!SUPA||!ANON)return err(res,503,'NOT_CONFIGURED','Supabase não configurado.');
+  const usage=await fetchJSON(SUPA.replace(/\/$/,'')+'/rest/v1/rpc/nr_usage_status',{
+   method:'POST',headers:{apikey:ANON,Authorization:'Bearer '+user.token,'Content-Type':'application/json'},body:'{}'
+  });
+  return json(res,200,usage);
+ }
+ const paidEndpoint=(pathname==='/api/places/search'||pathname==='/api/places/nearby'||pathname.startsWith('/api/places/')||pathname==='/api/routes'||pathname==='/api/ai');
+ if(paidEndpoint&&PAID_API_AUTH&&!user)return err(res,401,'AUTH','Faça login para usar as APIs com controle de custos.');
+ if(paidEndpoint&&(pathname!=='/api/ai')&&!GOOGLE)return err(res,503,'NOT_CONFIGURED',ERROR_MSG.NO_API);
  if(method==='POST'&&pathname==='/api/places/search'){
   const q=clip(data.query,160);if(q.length<2)return err(res,400,'QUERY','Digite pelo menos dois caracteres.');
   await consumeQuota(req,user,'search');
@@ -89,7 +101,7 @@ async function api(req,res,url){if(!throttle(req))return err(res,429,'RATE_LIMIT
   const r=answer.routes?.[0];return json(res,200,{distanceMeters:r?.distanceMeters??null,duration:r?.duration??null,polyline:r?.polyline?.encodedPolyline||null,mode,source:'google'});
  }
  if(method==='POST'&&pathname==='/api/ai'){
-  if(!user&&SUPA&&ANON)return err(res,401,'AUTH',ERROR_MSG.AUTH);
+  if(!user)return err(res,401,'AUTH',ERROR_MSG.AUTH);
   if(!OPENAI)return err(res,503,'AI_NOT_CONFIGURED','Configure OPENAI_API_KEY no servidor para ativar a NEON AI.');
   const question=clip(data.question,700);if(question.length<3)return err(res,400,'QUERY','Escreva sua pergunta.');
   const places=Array.isArray(data.places)?data.places.slice(0,5).map(x=>({name:clip(x.name,100),category:clip(x.category,80),rating:typeof x.rating==='number'?x.rating:null,reviews:typeof x.reviews==='number'?x.reviews:null,website:!!x.website,address:clip(x.address,160)})):[];

@@ -61,9 +61,43 @@ O antigo site estático Render pode continuar como backup; a versão SaaS usa ou
 ## Limites / próximos passos antes de operação comercial
 
 - Configurar credenciais e testar API real, mapa e rotas. Não há chaves privadas pré-configuradas.
-- Testar migração SQL e políticas com usuários diferentes. Atualmente CRM opera em navegador por RLS.
+- Migrações SQL 002 e 003 aplicadas no banco conectado; ainda é necessário executar testes de autorização com pelo menos duas contas distintas antes de vender assinaturas.
 - Ativar domínio, HTTPS, controles de origem/CSRF quando houver sessão baseada em cookies, monitoramento de erros, logs de custo e alertas.
 - Integrações de pagamento, multi-tenant empresarial, tarefas e interações possuem tabelas/arquitetura, mas **não** há UI operacional completa nem faturamento automatizado.
 - Relatório PDF utiliza impressão do navegador; funcionalidades avançadas de PDF são extensão futura.
 - Clusterização avançada de marcadores, Google Photos licenciadas e cálculo visual da polilinha do trajeto ainda requerem implementação adicional.
 - A versão depende da disponibilidade e das condições de uso do Google Maps Platform. Não usar listas Google para enriquecimento offline, raspagem ou exportação em massa.
+
+
+## Segurança e limites de consumo — versão 1.1
+
+- **Autenticação é exigida antes de qualquer chamada cobrada**, configurada por `REQUIRE_AUTH_FOR_PAID_APIS=true` (padrão). Não desabilite em produção.
+- `sql/002_cost_controls.sql` cria **limites globais diários** e por plano para `search`, `detail`, `route`, `autocomplete`, `ai`. Os limites são conservadores: 80 pesquisas, 180 detalhes, 60 rotas, 200 autocompletes, 40 análises IA por dia no projeto inteiro. **Não representam valores monetários**: SKUs do Google e modelos de IA têm preços diferentes.
+- Os usuários autenticados consomem créditos via função SQL `nr_consume_quota`, com bloqueio transacional e RLS. Gratuito tem 3 pesquisas/dia e acesso básico; CRM/favoritos/IA exigem plano profissional ou empresarial. Esses planos NÃO são disponibilizados automaticamente nem cobrados.
+- `sql/003_usage_status.sql` permite ao usuário autenticado consultar seu consumo via `/api/usage`, mostrado em Configurações.
+- Admin: atualizar planos diretamente em `nr_profiles` via SQL Editor, e ajustar limites em `nr_plan_limits`/`nr_global_limits` **após revisar a cobrança real**. Não oferecemos painel administrador com autenticação extra para manipular planos ainda.
+- Defina quotas de projeto no **Google Cloud Console** e crie alertas de orçamento. Alertas não são bloqueadores automáticos e tetos de chamadas da aplicação não substituem limites no Google Cloud.
+- Proxy usa IP da conexão para limitar tráfego por minuto, mas limites por usuário persistem no banco e são a barreira principal. Escalar para várias instâncias requer WAF/rate-limiting centralizado.
+- Tests: `npm test`. Prebuild roda testes Node antes de compilar; a Render deve indicar build concluído e deploy live.
+
+## Ativação segura de APIs (depende do proprietário)
+
+### Google Cloud
+
+1. Entre em https://console.cloud.google.com/ , selecione/crie o projeto **Neon Radar** e associe faturamento, depois habilite **Places API (New)**, **Maps JavaScript API** e **Routes API**.
+2. Crie uma **chave de servidor** limitada por API a Places API (New) e Routes API. Se o serviço não tiver IP fixo de saída, **não habilite nenhuma chave irrestrita com quotas altas**; use gateway com origem estática / medidas de abuso adicionais, ou configure IP de saída fixo no plano de infraestrutura correspondente.
+3. Crie uma **chave de navegador** limitada a `Maps JavaScript API` e referer `https://neon-radar-saas-tribal70.onrender.com/*`; se utilizar o domínio antigo, permita a origem apropriada.
+4. Defina quotas para cada API e alertas de faturamento em https://console.cloud.google.com/billing/ . A quota global da aplicação começa em valores conservadores e pode ser reduzida na tabela `nr_global_limits`.
+5. Sem colar segredos no chat, preencha Render -> Serviço NEON RADAR SaaS -> Environment: `GOOGLE_MAPS_SERVER_KEY`, `VITE_GOOGLE_MAPS_BROWSER_KEY`.
+
+### OpenAI
+
+1. Crie um projeto/chave em https://platform.openai.com/api-keys . A assinatura ChatGPT Plus **não inclui** créditos de API automaticamente.
+2. Configure a chave no Render como `OPENAI_API_KEY`. Nunca a inclua no repositório nem no `VITE_`.
+3. Antes de liberar, crie um orçamento na plataforma API e mantenha cotas em `nr_global_limits`.
+
+### Stripe
+
+A conexão Stripe é opcional e ainda não foi autorizada. Não criar preços, cobranças, assinaturas ou webhooks ativos até que o proprietário conecte a conta, informe os planos/preços e teste uma assinatura de sandbox. Não atribuir planos por callbacks não verificados.
+
+**Status:** Autenticação e RLS presentes. Google Cloud e OpenAI dependem de chaves configuradas pelo proprietário; não há promessa de funcionamento de pesquisa Google sem elas. Portal SaaS é operável em modo de configuração. Mapa desenha o percurso real quando uma rota válida é retornada.
