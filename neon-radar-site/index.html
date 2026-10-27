@@ -70,6 +70,14 @@
     <div id="modalShade" class="modal-shade hidden"><div class="modal" id="modal"></div></div>
   </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+  // Ao iniciar, carregar a nova aplicação SaaS React/Node após esta abertura.
+  document.getElementById('startBtn').addEventListener('click',function(event){
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    window.location.assign('https://neon-radar-saas-tribal70.onrender.com/?start=1');
+  },{capture:true});
+  </script>
   <script src="intro-loader.js"></script>
   <script>
     // Falha segura: o botão abre o painel mesmo que um script externo falhe.
