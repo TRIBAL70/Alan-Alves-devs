@@ -6,7 +6,7 @@
 - Painel futurista com 12 seções, responsividade, menu inferior mobile, mapa Google oficial quando configurado.
 - API Node na **mesma origem**: Text Search (New), Nearby Search (New), Place Details (New), Autocomplete e Routes API. Field Masks explícitas, validação e timeout.
 - Análise NEON AI baseada somente nos dados da consulta, pela API OpenAI **no servidor**.
-- Autenticação Supabase (login, cadastro, recuperação) e banco PostgreSQL com RLS, favoritos, leads, notas, tarefas, interações, histórico e controle de quotas por função SQL.
+- Autenticação Supabase (login, cadastro, recuperação) e banco PostgreSQL com RLS, favoritos, nr_leads, notas, tarefas, interações, histórico e controle de quotas por função SQL.
 - Comparação de até 5 negócios, filtros, índice de oportunidade explicado, gráficos reais, relatórios imprimíveis em PDF.
 - Zero cartões fictícios nas pesquisas. Sem integração Google, a UI sinaliza que a conexão está pendente.
 
@@ -36,7 +36,7 @@ Para desenvolvimento frontend: execute `npm run dev` e em outro terminal `npm st
 
 1. Crie projeto Supabase. Execute `sql/schema.sql` em **SQL Editor**. Configure `SUPABASE_URL`, `SUPABASE_ANON_KEY` (sem segredo no navegador) e opcionalmente `SUPABASE_SERVICE_ROLE_KEY` apenas no backend.
 2. Configure URLs de redirecionamento Auth para seu domínio. Decida se confirmação por e-mail é obrigatória.
-3. `auth.uid()` controla permissões e `consume_quota` aplica cotas SQL atômicas aos usuários autenticados. Os perfis não podem alterar o próprio plano.
+3. `auth.uid()` controla permissões e `nr_consume_quota` aplica cotas SQL atômicas aos usuários autenticados. Os perfis não podem alterar o próprio plano.
 4. Para contas sem login, o backend limita a 3 chamadas por categoria por IP/dia **em memória** (reinícios repõem o limite); desative consultas públicas ou use Redis/WAF antes de produção com custos elevados.
 5. Colunas CRM e favoritos armazenam `place_id`, status e conteúdo próprio do usuário, **não replicam** listagens do Google.
 
