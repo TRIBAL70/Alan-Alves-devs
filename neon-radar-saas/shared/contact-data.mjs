@@ -4,6 +4,12 @@ const ATACADAO={googleId:'ChIJTzDB6zafGZURwi4RQNYMepo',name:'Atacadão',lat:-30.
 const fold=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
 export function applyVerifiedContacts(place){
  const name=fold(place.name),address=fold(place.address);
+ const vilaName=['vilaventura','hotelvilaventura'].some(prefix=>name.startsWith(prefix));
+ const vilaAddress=vilaName&&address.includes('manoelsantana')&&address.includes('625')&&address.includes('viamao');
+ const vilaDistance=typeof place.lat==='number'&&typeof place.lng==='number'?Math.hypot((place.lat+30.1183468)*111320,(place.lng+51.0311348)*96200):Infinity;
+ const vilaLocation=(vilaName&&vilaDistance<200)||(name==='estabelecimentonogooglemaps'&&vilaDistance<35);
+ if(vilaAddress||vilaLocation)return {...place,name:'Vila Ventura Ecoresort',category:'Hotel',address:place.address||'R. Manoel Santana, 625 - Passo da Branquinha, Viamão - RS, 94457-300',lat:-30.1183468,lng:-51.0311348,phone:place.phone||'+55 51 3045-9000',website:place.website||'https://www.vilaventura.com.br/',contactsStatus:'verified',contactSource:'Site oficial · contato conferido',contactCheckedAt:'2026-10-28'};
+
  const byId=place.id==='gmap_'+ATACADAO.googleId||place.googlePlaceId===ATACADAO.googleId;
  const byAddress=name.startsWith('atacadao')&&address.includes('4742')&&address.includes('viamao')&&address.includes('salgadofilho');
  const byLocation=name.startsWith('atacadao')&&typeof place.lat==='number'&&typeof place.lng==='number'&&Math.hypot((place.lat-ATACADAO.lat)*111320,(place.lng-ATACADAO.lng)*96200)<250;

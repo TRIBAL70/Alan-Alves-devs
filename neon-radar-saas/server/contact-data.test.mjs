@@ -24,3 +24,14 @@ test('partial Google responses never erase an existing phone or website',()=>{
  const p=mergeContactDetails({...base,name:'Teste',phone:'1234',website:'https://example.org'},{name:'Teste',phone:null,website:null});
  assert.equal(p.phone,'1234');assert.equal(p.website,'https://example.org');
 });
+
+test('Vila Ventura official contacts match the exact resort and persist in the shared directory',()=>{
+ const p=applyVerifiedContacts({...base,name:'Vila Ventura Ecoresort',lat:-30.1183468,lng:-51.0311348});
+ assert.equal(p.phone,'+55 51 3045-9000');assert.equal(p.website,'https://www.vilaventura.com.br/');assert.equal(p.contactSource,'Site oficial · contato conferido');assert.equal(p.whatsapp,undefined);
+ const address=applyVerifiedContacts({...base,name:'Vila Ventura',lat:null,lng:null,address:'Rua Manoel Santana, 625 - Viamão RS'});assert.equal(address.phone,p.phone);
+ const native=applyVerifiedContacts({...base,name:'Estabelecimento no Google Maps',lat:p.lat,lng:p.lng});assert.equal(native.name,p.name);
+});
+test('Vila Ventura correction does not attach to another business or distant branch',()=>{
+ assert.equal(applyVerifiedContacts({...base,name:'Vila Ventura',lat:-29,lng:-51}).phone,null);
+ assert.equal(applyVerifiedContacts({...base,name:'Outra loja',lat:-30.1183468,lng:-51.0311348}).phone,null);
+});
