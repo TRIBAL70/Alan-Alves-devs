@@ -28,6 +28,8 @@ test('NEON API: health, config, protective login and input errors', {timeout:150
   const blocked=await fetch(`http://127.0.0.1:${port}/api/places/search`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({query:'barbearias Viamão'})});
   assert.equal(blocked.status,401);
   assert.equal((await blocked.json()).error,'AUTH');
+  const blockedDetail=await fetch(`http://127.0.0.1:${port}/api/places/gmap_ChIJfixture01`);
+  assert.equal(blockedDetail.status,401,'automatic preview must preserve authentication');
   const blockedAI=await fetch(`http://127.0.0.1:${port}/api/ai`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:'Quais negócios?'})});
   assert.equal(blockedAI.status,401);
   const blockedRoute=await fetch(`http://127.0.0.1:${port}/api/routes`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({origin:{lat:0,lng:0},destination:{lat:1,lng:1}})});

@@ -1,3 +1,4 @@
+import {verificationFor} from './verification.mjs';
 import {applyVerifiedContacts,mergeContactDetails} from '../shared/contact-data.mjs';
 import http from 'node:http';
 import {googlePreview,normalizeGoogle} from './place-preview.mjs';
@@ -86,7 +87,7 @@ async function api(req,res,url){if(!throttle(req))return err(res,429,'RATE_LIMIT
     if(extra){result={...result,place:google?applyVerifiedContacts(extra):mergeContactDetails(result.place,extra),previewSource:'google'};}else{result.place.contactsStatus=result.place.contactsStatus||'unconfirmed';result.previewNote='Não foi possível confirmar o mesmo estabelecimento no Google. Consulte a ficha original.';}
    }catch(e){if(google&&result.place.contactsStatus!=='verified')return err(res,e.status||503,e.code||'GOOGLE_PREVIEW',e.message);result.previewNote=e.message;result.place.contactsStatus=result.place.contactsStatus||'unavailable';}
   }else if(google&&result.place.contactsStatus!=='verified')return err(res,503,'GOOGLE_PREVIEW','Fotos e contatos do Google ainda precisam da chave do servidor e da Places API.');
-  return json(res,200,result);
+  return json(res,200,{...result,verification:verificationFor(result)});
  }
  if(method==='POST'&&pathname==='/api/places/autocomplete')return json(res,200,{suggestions:[],source:'openstreetmap'});
  if(method==='POST'&&pathname==='/api/routes'){
