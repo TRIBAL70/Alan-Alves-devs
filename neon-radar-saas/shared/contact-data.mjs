@@ -9,7 +9,7 @@ export function applyVerifiedContacts(place){
  const byLocation=name.startsWith('atacadao')&&typeof place.lat==='number'&&typeof place.lng==='number'&&Math.hypot((place.lat-ATACADAO.lat)*111320,(place.lng-ATACADAO.lng)*96200)<250;
  if(!byId&&!byAddress&&!byLocation)return place;
  const googleMapsUri='https://www.google.com/maps/search/?'+new URLSearchParams({api:'1',query:ATACADAO.address,query_place_id:ATACADAO.googleId});
- return {...place,name:ATACADAO.name,address:place.address||ATACADAO.address,lat:ATACADAO.lat,lng:ATACADAO.lng,phone:place.phone||ATACADAO.phone,website:place.website||ATACADAO.website,googlePlaceId:ATACADAO.googleId,googleMapsUri,contactsStatus:'verified',contactSource:'Google Maps · contato conferido',contactCheckedAt:ATACADAO.checkedAt};
+ return {...place,name:ATACADAO.name,category:'Atacadista',address:place.address||ATACADAO.address,lat:ATACADAO.lat,lng:ATACADAO.lng,phone:place.phone||ATACADAO.phone,website:place.website||ATACADAO.website,googlePlaceId:ATACADAO.googleId,googleMapsUri,contactsStatus:'verified',contactSource:'Google Maps · contato conferido',contactCheckedAt:ATACADAO.checkedAt};
 }
 export function mergeContactDetails(original,extra){
  return applyVerifiedContacts({...original,name:extra.name||original.name,address:extra.address||original.address,phone:extra.phone||original.phone,website:extra.website||original.website,hours:extra.hours||original.hours,photos:extra.photos?.length?extra.photos:original.photos,googlePlaceId:extra.id?.startsWith('gmap_')?extra.id.slice(5):original.googlePlaceId,googleMapsUri:extra.googleMapsUri||extra.mapsUri||original.googleMapsUri,contactsStatus:'checked',contactSource:'Google Places'});
