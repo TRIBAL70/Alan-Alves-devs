@@ -3,3 +3,10 @@
 .crm-expand{grid-column:1/-1;justify-self:start}.crm-workflow{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:19px;padding:18px;border-radius:12px;background:#061527;border:1px solid #215b7d}.crm-workflow h4{font:700 12px Orbitron,sans-serif;color:#00d7ff;margin:0 0 15px}.crm-workflow form{display:flex;gap:8px;margin-top:13px}.crm-workflow input:not([type=checkbox]){background:#0b2338;border:1px solid #266080;border-radius:8px;padding:11px;color:#d6f7ff;width:100%;min-width:0}.crm-workflow form button{flex-shrink:0}.task-line{display:flex;align-items:center;gap:8px;color:#c2e7f6;margin-bottom:8px}.task-line input{accent-color:#00d3ff}.task-line .done{text-decoration:line-through;color:#6889a0}.interaction-line{padding:9px 0;border-bottom:1px solid #1d4260;display:flex;flex-direction:column;color:#b2cfdf}.interaction-line small{color:#6889a0}@media(max-width:580px){.crm-workflow{grid-template-columns:1fr}.crm-workflow form{flex-wrap:wrap}}
 
 .usage-panel{padding:22px 26px;margin:20px 0}.usage-panel h2{font:700 16px Orbitron,sans-serif}.usage-panel p{color:#9dc0d6}.usage-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:18px}.usage-item{padding:15px;border:1px solid #174d75;border-radius:11px;background:#091e36;display:flex;flex-direction:column;gap:8px}.usage-item strong{font:700 11px Orbitron,sans-serif;color:#00e7ff}.usage-item span{font:800 19px Orbitron,sans-serif}.usage-item small{color:#91b5ce;line-height:1.5}
+/* Keep Leaflet panes inside the app's dialogs and mobile navigation. */
+.osm-map .map-native{z-index:0;background:#d6e1e5;font-family:Rajdhani,sans-serif}
+.osm-map:after,.osm-map:before{display:none}
+.osm-map .leaflet-control-attribution{font-size:10px;background:#ffffffed;color:#16303f;max-width:85%}
+.osm-map .leaflet-control-attribution a{color:#07516a}
+.osm-map .leaflet-control-zoom a{background:#0b2139;color:#b7f6ff;border-color:#285574}
+.travel-controls a{text-decoration:none}
