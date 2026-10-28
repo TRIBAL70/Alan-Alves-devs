@@ -29,7 +29,7 @@ test('API searches OSM without Google credentials, caches upstream results and k
  let upstreamCalls=0,received='';
  const upstream=http.createServer(async(req,res)=>{upstreamCalls++;let text='';for await(const chunk of req)text+=chunk;received=new URLSearchParams(text).get('data');res.setHeader('content-type','application/json');res.end(JSON.stringify({elements:[{type:'node',id:42,lat:-30.02,lon:-51.2,tags:{name:'Fixture somente para testes',amenity:'restaurant','contact:phone':'+555100000000'}}]}));});
  upstream.listen(0,'127.0.0.1');await once(upstream,'listening');
- const child=spawn(process.execPath,['server/index.mjs'],{cwd:new URL('..',import.meta.url).pathname,env:{...process.env,PORT:'0',SUPABASE_URL:'',VITE_SUPABASE_URL:'',SUPABASE_ANON_KEY:'',VITE_SUPABASE_ANON_KEY:'',GOOGLE_MAPS_SERVER_KEY:'',VITE_GOOGLE_MAPS_BROWSER_KEY:'',REQUIRE_AUTH_FOR_PAID_APIS:'false',OSM_OVERPASS_URL:`http://127.0.0.1:${upstream.address().port}`},stdio:['ignore','pipe','pipe']});
+ const child=spawn(process.execPath,['server/index.mjs'],{cwd:new URL('..',import.meta.url).pathname,env:{...process.env,OSM_WARM_QUERY:'',PORT:'0',SUPABASE_URL:'',VITE_SUPABASE_URL:'',SUPABASE_ANON_KEY:'',VITE_SUPABASE_ANON_KEY:'',GOOGLE_MAPS_SERVER_KEY:'',VITE_GOOGLE_MAPS_BROWSER_KEY:'',REQUIRE_AUTH_FOR_PAID_APIS:'false',OSM_OVERPASS_URL:`http://127.0.0.1:${upstream.address().port}`},stdio:['ignore','pipe','pipe']});
  // PORT=0 permits the OS to pick an unused port. Read the actual bound port.
  let output='';
  try{

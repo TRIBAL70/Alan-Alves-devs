@@ -13,7 +13,7 @@ test('NEON API: health, config, protective login and input errors', {timeout:150
  const port=await randomPort();
  const processServer=spawn(process.execPath,['server/index.mjs'],{
   cwd:new URL('..',import.meta.url).pathname,
-  env:{...process.env,PORT:String(port),GOOGLE_MAPS_SERVER_KEY:'fake-test-key',OPENAI_API_KEY:'fake-test-key',REQUIRE_AUTH_FOR_PAID_APIS:'true'},
+  env:{...process.env,OSM_WARM_QUERY:'',PORT:String(port),GOOGLE_MAPS_SERVER_KEY:'fake-test-key',OPENAI_API_KEY:'fake-test-key',REQUIRE_AUTH_FOR_PAID_APIS:'true'},
   stdio:'ignore'
  });
  try{
