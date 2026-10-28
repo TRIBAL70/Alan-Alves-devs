@@ -69,7 +69,7 @@ async function overpass(query){
   requests++;lastRequest=Date.now();
   try{
    const res=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','User-Agent':USER_AGENT},body:new URLSearchParams({data:query}),signal:AbortSignal.timeout(60000)});
-   if(!res.ok)throw fail(res.status===429?'A fonte OpenStreetMap está ocupada. Aguarde e tente novamente.':'A fonte OpenStreetMap está temporariamente indisponível.',res.status===429?429:503);
+   if(!res.ok){console.warn('OSM HTTP status:',res.status);throw fail(res.status===429?'A fonte OpenStreetMap está ocupada. Aguarde e tente novamente.':'A fonte OpenStreetMap está temporariamente indisponível.',res.status===429?429:503);}
    let size=0;const chunks=[];
    for await(const chunk of res.body){size+=chunk.length;if(size>MAX_BYTES)throw fail('A consulta retornou dados demais. Reduza o raio da pesquisa.',400,'OSM_SIZE');chunks.push(Buffer.from(chunk));}
    const data=JSON.parse(Buffer.concat(chunks).toString('utf8'));
