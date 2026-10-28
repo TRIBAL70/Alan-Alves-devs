@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {googlePreview} from './place-preview.mjs';
 import { searchOSM, detailOSM } from './osm.mjs';
 import { readFile, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -71,10 +72,20 @@ async function api(req,res,url){if(!throttle(req))return err(res,429,'RATE_LIMIT
   return json(res,200,await searchOSM({...data,query}));
  }
  if(method==='GET'&&pathname.startsWith('/api/places/')){
-  const id=pathname.slice('/api/places/'.length);
-  if(!/^osm_(node|way|relation)_\d{1,15}$/.test(id))return err(res,400,'ID','Este registro é de uma fonte anterior. Faça uma nova pesquisa no OpenStreetMap.');
-  checkOSMQuota(req,user);
-  return json(res,200,await detailOSM(id));
+  const id=pathname.slice('/api/places/'.length),google=id.startsWith('gmap_');
+  if(!/^osm_(node|way|relation)_\d{1,15}$/.test(id)&&!/^gmap_[A-Za-z0-9_-]{8,200}$/.test(id))return err(res,400,'ID','Identificador de estabelecimento inválido. Faça uma nova pesquisa.');
+  const key=process.env.GOOGLE_MAPS_SERVER_KEY||'';
+  let result;
+  if(!google){checkOSMQuota(req,user);result=await detailOSM(id);}
+  else result={place:{id},source:'google'};
+  if(key){
+   try{
+    await consumeQuota(req,user,'detail');
+    const extra=await googlePreview(result.place,key);
+    if(extra){result={...result,place:google?extra:{...result.place,phone:result.place.phone||extra.phone,website:result.place.website||extra.website,hours:result.place.hours||extra.hours,photos:result.place.photos?.length?result.place.photos:extra.photos,googleMapsUri:extra.mapsUri},previewSource:'google'};}
+   }catch(e){if(google)return err(res,e.status||503,e.code||'GOOGLE_PREVIEW',e.message);result.previewNote=e.message;}
+  }else if(google)return err(res,503,'GOOGLE_PREVIEW','Fotos e contatos do Google ainda precisam da chave do servidor e da Places API.');
+  return json(res,200,result);
  }
  if(method==='POST'&&pathname==='/api/places/autocomplete')return json(res,200,{suggestions:[],source:'openstreetmap'});
  if(method==='POST'&&pathname==='/api/routes'){

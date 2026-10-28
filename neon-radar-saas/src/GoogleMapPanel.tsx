@@ -60,6 +60,7 @@ function loadGoogle(key:string){
 export function GoogleMapPanel({places,config,origin,onSelect,onAlternative}:{places:Place[];config:Config;origin:{lat:number;lng:number};onSelect:(p:Place)=>void;onAlternative:()=>void}){
  const shell=useRef<HTMLDivElement>(null),div=useRef<HTMLDivElement>(null),map=useRef<any>(null),markers=useRef<any[]>([]);
  const [ready,setReady]=useState(false),[error,setError]=useState(''),[neon,setNeon]=useState(true),[mapType,setMapType]=useState<'roadmap'|'hybrid'>('roadmap'),[expanded,setExpanded]=useState(false);
+ const selectRef=useRef(onSelect);selectRef.current=onSelect;
  const neonRef=useRef(neon);neonRef.current=neon;
  useEffect(()=>{
   let active=true;
@@ -72,6 +73,12 @@ export function GoogleMapPanel({places,config,origin,onSelect,onAlternative}:{pl
    const gm=(window as any).google.maps;
    // Custom controls replace default UI; Google attribution remains untouched.
    map.current=new gm.Map(div.current,{center:origin,zoom:12,mapTypeId:'roadmap',styles:neonRef.current?NEON_STYLE:[],disableDefaultUI:true,keyboardShortcuts:true,gestureHandling:'cooperative'});
+   map.current.addListener('click',(event:any)=>{
+    if(!event.placeId||!event.latLng)return;
+    event.stop();const lat=event.latLng.lat(),lng=event.latLng.lng();
+    const mapsUri='https://www.google.com/maps/search/?'+new URLSearchParams({api:'1',query:`${lat},${lng}`,query_place_id:event.placeId});
+    selectRef.current({id:'gmap_'+event.placeId,name:'Estabelecimento no Google Maps',category:'Carregando informações do local',address:null,lat,lng,rating:null,reviews:null,website:null,phone:null,open:null,hours:null,status:null,mapsUri,source:'google'});
+   });
    setReady(true);
   }).catch(e=>{if(active)setError(e.message);});
   return()=>{active=false;authListeners.delete(denied);markers.current.forEach(m=>m.setMap(null));markers.current=[];map.current=null;};
