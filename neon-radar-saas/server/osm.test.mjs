@@ -8,7 +8,7 @@ import {buildSearch,normalizeOSM} from './osm.mjs';
 test('OSM query resolves a city in the text and escapes names',()=>{
  const query=buildSearch({query:'Lancheiras em Porto Alegre RS',center:{lat:0,lng:0},radiusKm:5});
  assert.deepEqual(query.center,{lat:-30.0346,lng:-51.2177});
- assert.match(query.query,/"amenity"~"\^\(fast_food\)\$"/);
+ assert.ok(query.query.includes('["amenity"="fast_food"]'));
  assert.match(query.query,/around:5000,-30.0346,-51.2177/);
  assert.match(query.query,/out body center 60/);
  const named=buildSearch({query:'Loja "teste";out body;',center:{lat:1,lng:2}});

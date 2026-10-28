@@ -45,7 +45,7 @@ export function buildSearch(data){
  if(city&&!split)term=query.replace(new RegExp(literal(city[0]),'i'),'').replace(/\b(?:rs|sp|rj|pr|mg|pe)\b/gi,'').trim();
  const center=city?{lat:city[1],lng:city[2]}:point(data.center)?data.center:null;
  const category=categories.find(([re])=>re.test(fold(term)));
- const filter=category?`[${quoted(category[1][0])}~${quoted('^('+category[1][1]+')$')}]`:'';
+ const filter=category?(category[1][1].includes('|')?`[${quoted(category[1][0])}~${quoted('^('+category[1][1]+')$')}]`:`[${quoted(category[1][0])}=${quoted(category[1][1])}]`):'';
  const nameFilter=category?'':`["name"~${quoted(literal(term||query))},i]`;
  const radius=Math.max(1,Math.min(20,Number(data.radiusKm)||10))*1000;
  let scope,prefix='';
@@ -55,7 +55,7 @@ export function buildSearch(data){
  }else if(center)scope=`around:${radius},${center.lat},${center.lng}`;
  else throw fail('Escolha uma região ou pesquise no formato “restaurantes em Porto Alegre”.',400,'REGION');
  const selectors=filter?[`nwr(${scope})${filter}["name"]`]:['amenity','shop','leisure','tourism','office','craft'].map(k=>`nwr(${scope})[${quoted(k)}]${nameFilter}`);
- return {query:`[out:json][timeout:20][maxsize:16777216];${prefix}(${selectors.map(s=>s+';').join('')});out body center 60;`,center,city:city?.[0]||location||null};
+ return {query:`[out:json][timeout:20][maxsize:134217728];${prefix}(${selectors.map(s=>s+';').join('')});out body center 60;`,center,city:city?.[0]||location||null};
 }
 async function overpass(query){
  const found=cache.get(query);if(found&&found.until>Date.now())return found.data;
@@ -73,7 +73,7 @@ async function overpass(query){
    let size=0;const chunks=[];
    for await(const chunk of res.body){size+=chunk.length;if(size>MAX_BYTES)throw fail('A consulta retornou dados demais. Reduza o raio da pesquisa.',400,'OSM_SIZE');chunks.push(Buffer.from(chunk));}
    const data=JSON.parse(Buffer.concat(chunks).toString('utf8'));
-   if(data.remark)throw fail('A fonte aberta não concluiu a consulta. Reduza o raio ou tente mais tarde.');
+   if(data.remark){console.warn('OSM provider remark:',String(data.remark).slice(0,220));throw fail('A fonte aberta não concluiu a consulta. Reduza o raio ou tente mais tarde.');}
    if(!Array.isArray(data.elements))throw fail('Resposta inválida da fonte aberta.');
    if(cache.size>=MAX_CACHE)cache.delete(cache.keys().next().value);
    cache.set(query,{until:Date.now()+TTL,data});return data;
