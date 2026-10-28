@@ -21,9 +21,19 @@ export async function googlePreview(input,key,fetcher=fetch){
   if(!match)return null;id=match.id;
  }
  const raw=await request(API+'/places/'+encodeURIComponent(id)+'?languageCode=pt-BR',key,fetcher,{headers:{'X-Goog-FieldMask':'id,displayName,formattedAddress,location,primaryTypeDisplayName,internationalPhoneNumber,nationalPhoneNumber,websiteUri,googleMapsUri,regularOpeningHours,businessStatus,photos'}});
- const place=normalizeGoogle(raw),photo=raw.photos?.[0];
- if(photo&&/^places\/[A-Za-z0-9_-]+\/photos\/[A-Za-z0-9_-]+$/.test(photo.name)){
-  try{const media=await request(API+'/'+photo.name+'/media?maxWidthPx=900&skipHttpRedirect=true',key,fetcher);const uri=safeWeb(media.photoUri);if(uri)place.photos=[{url:uri,source:'Google Maps',authors:(photo.authorAttributions||[]).map(a=>({name:String(a.displayName||'Autor da foto'),url:safeWeb(a.uri)}))}];}catch{place.photoNote='A foto do Google não pôde ser carregada.';}
+ const place=normalizeGoogle(raw);
+ // Resolve fresh media URLs; a broken first photo must not hide the other photos.
+ const candidates=(raw.photos||[]).filter(photo=>typeof photo.name==='string'&&photo.name.startsWith(`places/${id}/photos/`)&&/^places\/[A-Za-z0-9_-]+\/photos\/[A-Za-z0-9._~=-]+$/.test(photo.name)).slice(0,3);
+ for(const photo of candidates){
+  try{
+   const media=await request(API+'/'+photo.name+'/media?maxWidthPx=900&skipHttpRedirect=true',key,fetcher);
+   // Google may return a scheme-relative photoUri. Use HTTPS in that case.
+   const uri=safeWeb(typeof media.photoUri==='string'&&media.photoUri.startsWith('//')?'https:'+media.photoUri:media.photoUri);
+   if(!uri)throw new Error('PHOTO_URL');
+   place.photos.push({url:uri,source:'Google Maps',authors:(photo.authorAttributions||[]).map(a=>({name:String(a.displayName||'Autor da foto'),url:safeWeb(a.uri)}))});
+  }catch{place.photoNote='Não foi possível carregar as fotos do Google. Tente atualizar a prévia. Se persistir, confira a autorização da Places API para fotos.';}
  }
+ if(place.photos.length)delete place.photoNote;
+ else if(!place.photoNote)place.photoNote=raw.photos?.length?'O Google não retornou um endereço de foto válido para este local.':'O Google não retornou fotos para este estabelecimento nesta consulta.';
  return place;
 }

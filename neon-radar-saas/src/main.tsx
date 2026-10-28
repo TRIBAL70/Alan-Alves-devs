@@ -13,7 +13,7 @@ import {PlacePreview,type Verification} from './PlacePreview';
 import {GoogleMapPanel} from './GoogleMapPanel';
 import {InstallApp} from './InstallApp';
 
-export type Place={contactsStatus?:string;contactSource?:string;contactCheckedAt?:string;googlePlaceId?:string;photos?:{url:string;source:string;authors:{name:string;url:string|null}[]}[];email?:string|null;whatsapp?:string|null;instagram?:string|null;googleMapsUri?:string|null;id:string;name:string;category:string;address:string|null;lat:number|null;lng:number|null;rating:number|null;reviews:number|null;website:string|null;phone:string|null;open:boolean|null;hours:string[]|null;status:string|null;mapsUri:string|null;source:'openstreetmap'|'google'};
+export type Place={photoNote?:string;contactsStatus?:string;contactSource?:string;contactCheckedAt?:string;googlePlaceId?:string;photos?:{url:string;source:string;authors:{name:string;url:string|null}[]}[];email?:string|null;whatsapp?:string|null;instagram?:string|null;googleMapsUri?:string|null;id:string;name:string;category:string;address:string|null;lat:number|null;lng:number|null;rating:number|null;reviews:number|null;website:string|null;phone:string|null;open:boolean|null;hours:string[]|null;status:string|null;mapsUri:string|null;source:'openstreetmap'|'google'};
 export type Config={places:boolean;provider:string;tileUrl:string;paidApiRequiresLogin?:boolean;google:boolean;maps:boolean;auth:boolean;ai:boolean;supabaseUrl:string|null;supabaseAnonKey:string|null;googleBrowserKey:string|null;demo:boolean;mode:string;plans:string[]};
 type Lead={id:string;place_id:string;status:string;notes:string;created_at:string};
 type Fav={id:string;place_id:string};

@@ -35,3 +35,29 @@ test('Google photo failure preserves the business contacts and does not invent a
  assert.deepEqual(p.photos,[]);assert.equal(p.phone,'3333-0000');assert.ok(p.photoNote);
  assert.equal(normalizeGoogle({id:'id',websiteUri:'javascript:alert(1)'}).website,null);
 });
+
+test('Google photo preview normalizes scheme-relative media URLs and keeps each author',async()=>{
+ const p=await googlePreview({id:'gmap_ChIJfixture01'},'secret',async url=>url.includes('/media?')?response({photoUri:'//lh3.googleusercontent.com/photo'}):response({id:'ChIJfixture01',photos:[{name:'places/ChIJfixture01/photos/photo',authorAttributions:[{displayName:'Autor'}]}]}));
+ assert.equal(p.photos[0].url,'https://lh3.googleusercontent.com/photo');
+ assert.equal(p.photos[0].authors[0].name,'Autor');
+ assert.equal(p.photoNote,undefined);
+});
+
+test('Google preview tries another photo after the first media request fails',async()=>{
+ const calls=[];
+ const p=await googlePreview({id:'gmap_ChIJfixture01'},'secret',async url=>{
+  calls.push(url);
+  if(url.includes('/photos/broken/'))return {ok:false,status:404};
+  if(url.includes('/photos/working/'))return response({photoUri:'https://lh3.googleusercontent.com/working'});
+  return response({id:'ChIJfixture01',photos:[{name:'places/ChIJfixture01/photos/broken'},{name:'places/ChIJfixture01/photos/working',authorAttributions:[{displayName:'Segundo autor'}]}]});
+ });
+ assert.equal(p.photos[0].url,'https://lh3.googleusercontent.com/working');
+ assert.equal(p.photos[0].authors[0].name,'Segundo autor');
+ assert.equal(p.photoNote,undefined);assert.equal(calls.length,3);
+});
+
+test('Google preview rejects another place photo reference and reports unavailable photos',async()=>{
+ let calls=0;
+ const p=await googlePreview({id:'gmap_ChIJfixture01'},'secret',async()=>{calls++;return response({id:'ChIJfixture01',photos:[{name:'places/anotherPlace/photos/photo'}]});});
+ assert.equal(calls,1);assert.deepEqual(p.photos,[]);assert.ok(p.photoNote);
+});

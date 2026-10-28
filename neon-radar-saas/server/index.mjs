@@ -44,7 +44,7 @@ async function consumeQuota(req,user,kind='search'){
  }
  const key=clientIp(req)+':'+day+':'+kind;const n=(publicUsage.get(key)||0)+1;if(n>limit)throw Object.assign(new Error(ERROR_MSG.QUOTA),{status:429,code:'QUOTA'});publicUsage.set(key,n);return {remaining:limit-n};
 }
-function serverConfig(){return {paidApiRequiresLogin:PAID_API_AUTH,provider:'openstreetmap',places:true,google:false,maps:true,auth:!!SUPA&&!!ANON,ai:!!OPENAI,supabaseUrl:SUPA||null,supabaseAnonKey:ANON||null,googleBrowserKey:process.env.GOOGLE_MAPS_BROWSER_KEY||process.env.VITE_GOOGLE_MAPS_BROWSER_KEY||null,tileUrl:process.env.OSM_TILE_URL||'https://tile.openstreetmap.org/{z}/{x}/{y}.png',demo:false,mode:'dados_abertos',plans:['gratuito','profissional','empresarial']};}
+function serverConfig(){return {paidApiRequiresLogin:PAID_API_AUTH,provider:'openstreetmap',places:true,google:!!process.env.GOOGLE_MAPS_SERVER_KEY,maps:true,auth:!!SUPA&&!!ANON,ai:!!OPENAI,supabaseUrl:SUPA||null,supabaseAnonKey:ANON||null,googleBrowserKey:process.env.GOOGLE_MAPS_BROWSER_KEY||process.env.VITE_GOOGLE_MAPS_BROWSER_KEY||null,tileUrl:process.env.OSM_TILE_URL||'https://tile.openstreetmap.org/{z}/{x}/{y}.png',demo:false,mode:'dados_abertos',plans:['gratuito','profissional','empresarial']};}
 async function api(req,res,url){if(!throttle(req))return err(res,429,'RATE_LIMIT','Muitas solicitações. Tente novamente em instantes.');
  const method=req.method, pathname=url.pathname;
  if(method==='GET'&&pathname==='/api/health')return json(res,200,{status:'ok',version:'1.1.0-osm'});

@@ -25,6 +25,8 @@ test('NEON API: health, config, protective login and input errors', {timeout:150
   assert.equal(ready,true,'server should start');
   const config=await (await fetch(`http://127.0.0.1:${port}/api/config`)).json();
   assert.equal(config.paidApiRequiresLogin,true);
+  assert.equal(config.google,true);
+  assert.ok(!JSON.stringify(config).includes("fake-test-key"));
   const blocked=await fetch(`http://127.0.0.1:${port}/api/places/search`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({query:'barbearias Viamão'})});
   assert.equal(blocked.status,401);
   assert.equal((await blocked.json()).error,'AUTH');
