@@ -41,7 +41,7 @@ function AlienGlyph({symbol}:{symbol:AlienSymbol}){
 // Share one script across dashboard, map view and place dialogs.
 let loading:Promise<void>|undefined;
 const authListeners=new Set<()=>void>();
-function loadGoogle(key:string){
+export function loadGoogle(key:string){
  const w=window as any;
  if(w.google?.maps?.Map)return Promise.resolve();
  if(loading)return loading;

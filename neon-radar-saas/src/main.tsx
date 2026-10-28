@@ -10,6 +10,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './style.css';
 import {PlacePreview,type Verification} from './PlacePreview';
+import {browserGooglePhotos} from './googlePhotos';
 import {GoogleMapPanel} from './GoogleMapPanel';
 import {InstallApp} from './InstallApp';
 
@@ -121,7 +122,10 @@ function NeoRadar(){const[entered,setEntered]=useState(()=>sessionStorage.getIte
   try{
    const v=await api<{place:Place;previewNote?:string;verification?:Verification}>(`/api/places/${encodeURIComponent(p.id)}`,'GET',undefined,await token(),controller.signal);
    if(request===previewRequest.current&&selectedId.current===p.id){
-    const resolved=applyVerifiedContacts({...p,...v.place});pendingPreview.current=resolved;setDetails(resolved);
+    let resolved=applyVerifiedContacts({...p,...v.place});
+    if(!resolved.photos?.length&&config.googleBrowserKey)resolved=await browserGooglePhotos(resolved,config.googleBrowserKey);
+    if(controller.signal.aborted||request!==previewRequest.current||selectedId.current!==p.id)return;
+    pendingPreview.current=resolved;setDetails(resolved);
     setPlaces(items=>items.map(item=>item.id===p.id?{...item,...resolved}:item));
     setPreviewNote(v.previewNote||'');setVerification(v.verification||{status:v.previewNote?'unavailable':'partial'});
    }
