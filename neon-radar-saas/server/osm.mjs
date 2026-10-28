@@ -77,7 +77,7 @@ async function overpass(query){
    if(!Array.isArray(data.elements))throw fail('Resposta inválida da fonte aberta.');
    if(cache.size>=MAX_CACHE)cache.delete(cache.keys().next().value);
    cache.set(query,{until:Date.now()+TTL,data});return data;
-  }catch(e){if(e.code?.startsWith?.('OSM_'))throw e;throw fail('Não foi possível consultar o OpenStreetMap agora. Tente novamente em instantes.');}
+  }catch(e){console.warn('OSM transport:',e.name,e.cause?.code||e.code||'INVALID_RESPONSE');if(e.code?.startsWith?.('OSM_'))throw e;throw fail('Não foi possível consultar o OpenStreetMap agora. Tente novamente em instantes.');}
  };
  if(queued>=2)throw fail('Há uma consulta em andamento. Aguarde alguns segundos e tente novamente.',429,'OSM_BUSY');
  queued++;const next=pending.then(work,work).finally(()=>{queued--;});pending=next.catch(()=>{});return next;
