@@ -1,17 +1,17 @@
 const API='https://places.googleapis.com/v1';
 export const safeWeb=value=>{try{const u=new URL(value);return ['https:','http:'].includes(u.protocol)&&!u.username&&!u.password?u.href:null;}catch{return null;}};
 export function normalizeGoogle(p){
- return {id:'gmap_'+p.id,name:p.displayName?.text||'Estabelecimento',category:p.primaryTypeDisplayName?.text||'Estabelecimento',address:p.formattedAddress||null,lat:p.location?.latitude??null,lng:p.location?.longitude??null,rating:p.rating??null,reviews:p.userRatingCount??null,website:safeWeb(p.websiteUri),phone:p.internationalPhoneNumber||p.nationalPhoneNumber||null,email:null,whatsapp:null,instagram:null,open:null,hours:p.regularOpeningHours?.weekdayDescriptions||null,status:p.businessStatus||null,mapsUri:safeWeb(p.googleMapsUri),photos:[],source:'google'};
+ return {id:'gmap_'+p.id,name:p.displayName?.text||'Estabelecimento',category:p.primaryTypeDisplayName?.text||'Estabelecimento',address:p.formattedAddress||null,lat:p.location?.latitude??null,lng:p.location?.longitude??null,rating:p.rating??null,reviews:p.userRatingCount??null,website:safeWeb(p.websiteUri),phone:p.internationalPhoneNumber||p.nationalPhoneNumber||null,email:null,whatsapp:null,instagram:null,open:null,hours:p.regularOpeningHours?.weekdayDescriptions||null,status:p.businessStatus||null,mapsUri:safeWeb(p.googleMapsUri),photos:[],source:'google',contactsStatus:'checked',contactSource:'Google Places'};
 }
 async function request(url,key,fetcher,options={}){
  const r=await fetcher(url,{...options,headers:{...options.headers,'X-Goog-Api-Key':key},signal:AbortSignal.timeout(12000)});
- if(!r.ok)throw new Error(r.status===403||r.status===400?'O Google não autorizou fotos e contatos. Verifique a chave do servidor e a Places API no Google Cloud.':'Fotos e contatos do Google estão temporariamente indisponíveis.');
+ if(!r.ok)throw Object.assign(new Error(r.status===403||r.status===400?'O Google não autorizou fotos e contatos. Verifique a chave do servidor e a Places API no Google Cloud.':'Fotos e contatos do Google estão temporariamente indisponíveis.'),{code:'GOOGLE_UNAVAILABLE'});
  return r.json();
 }
 export async function googlePreview(input,key,fetcher=fetch){
  if(!key)throw new Error('A integração de fotos e contatos do Google ainda não está configurada.');
  let id;
- if(input.id.startsWith('gmap_')){id=input.id.slice(5);if(!/^[A-Za-z0-9_-]{8,200}$/.test(id))throw new Error('Identificador Google inválido.');}
+ if(input.id.startsWith('gmap_')||input.googlePlaceId){id=input.googlePlaceId||input.id.slice(5);if(!/^[A-Za-z0-9_-]{8,200}$/.test(id))throw new Error('Identificador Google inválido.');}
  else {
   if(!Number.isFinite(input.lat)||!Number.isFinite(input.lng))return null;
   const found=await request(API+'/places:searchText',key,fetcher,{method:'POST',headers:{'Content-Type':'application/json','X-Goog-FieldMask':'places.id,places.displayName,places.location'},body:JSON.stringify({textQuery:[input.name,input.address].filter(Boolean).join(' ').slice(0,400),languageCode:'pt-BR',maxResultCount:3,locationBias:{circle:{center:{latitude:input.lat,longitude:input.lng},radius:200}}})});

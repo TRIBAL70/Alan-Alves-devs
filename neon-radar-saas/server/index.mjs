@@ -1,5 +1,6 @@
+import {applyVerifiedContacts,mergeContactDetails} from '../shared/contact-data.mjs';
 import http from 'node:http';
-import {googlePreview} from './place-preview.mjs';
+import {googlePreview,normalizeGoogle} from './place-preview.mjs';
 import { searchOSM, detailOSM } from './osm.mjs';
 import { readFile, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -77,14 +78,14 @@ async function api(req,res,url){if(!throttle(req))return err(res,429,'RATE_LIMIT
   const key=process.env.GOOGLE_MAPS_SERVER_KEY||'';
   let result;
   if(!google){checkOSMQuota(req,user);result=await detailOSM(id);}
-  else result={place:{id},source:'google'};
+  else result={place:applyVerifiedContacts(normalizeGoogle({id:id.slice(5),displayName:{text:'Estabelecimento no Google Maps'}})),source:'google'};
   if(key){
    try{
     await consumeQuota(req,user,'detail');
     const extra=await googlePreview(result.place,key);
-    if(extra){result={...result,place:google?extra:{...result.place,phone:result.place.phone||extra.phone,website:result.place.website||extra.website,hours:result.place.hours||extra.hours,photos:result.place.photos?.length?result.place.photos:extra.photos,googleMapsUri:extra.mapsUri},previewSource:'google'};}
-   }catch(e){if(google)return err(res,e.status||503,e.code||'GOOGLE_PREVIEW',e.message);result.previewNote=e.message;}
-  }else if(google)return err(res,503,'GOOGLE_PREVIEW','Fotos e contatos do Google ainda precisam da chave do servidor e da Places API.');
+    if(extra){result={...result,place:google?applyVerifiedContacts(extra):mergeContactDetails(result.place,extra),previewSource:'google'};}else{result.place.contactsStatus=result.place.contactsStatus||'unconfirmed';result.previewNote='Não foi possível confirmar o mesmo estabelecimento no Google. Consulte a ficha original.';}
+   }catch(e){if(google&&result.place.contactsStatus!=='verified')return err(res,e.status||503,e.code||'GOOGLE_PREVIEW',e.message);result.previewNote=e.message;result.place.contactsStatus=result.place.contactsStatus||'unavailable';}
+  }else if(google&&result.place.contactsStatus!=='verified')return err(res,503,'GOOGLE_PREVIEW','Fotos e contatos do Google ainda precisam da chave do servidor e da Places API.');
   return json(res,200,result);
  }
  if(method==='POST'&&pathname==='/api/places/autocomplete')return json(res,200,{suggestions:[],source:'openstreetmap'});

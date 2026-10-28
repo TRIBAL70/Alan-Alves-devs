@@ -1,3 +1,4 @@
+import {applyVerifiedContacts} from '../shared/contact-data.mjs';
 // OpenStreetMap read-only adapter. No Google keys or public Nominatim service.
 const ENDPOINT=process.env.OSM_OVERPASS_URL||'https://overpass-api.de/api/interpreter';
 const USER_AGENT='NeonRadar/1.1 (+https://neon-radar-saas-tribal70.onrender.com)';
@@ -85,7 +86,7 @@ async function overpass(query){
 export async function searchOSM(data){
  if(data.openNow===true)throw fail('A fonte aberta não informa “aberto agora” com segurança. Consulte o horário cadastrado nos detalhes.',400,'UNSUPPORTED_FILTER');
  const built=buildSearch(data),raw=await overpass(built.query);
- const seen=new Set();const places=raw.elements.map(normalizeOSM).filter(p=>{if(!p.name||p.lat===null||p.lng===null)return false;if(built.center){const rad=Math.PI/180,a=built.center,dy=(p.lat-a.lat)*rad,dx=(p.lng-a.lng)*rad,v=Math.sin(dy/2)**2+Math.cos(a.lat*rad)*Math.cos(p.lat*rad)*Math.sin(dx/2)**2;if(6371*2*Math.atan2(Math.sqrt(v),Math.sqrt(1-v))>built.radiusKm)return false;}const k=fold(p.name)+':'+p.lat.toFixed(4)+':'+p.lng.toFixed(4);if(seen.has(k))return false;seen.add(k);return true;});
+ const seen=new Set();const places=raw.elements.map(normalizeOSM).map(applyVerifiedContacts).filter(p=>{if(!p.name||p.lat===null||p.lng===null)return false;if(built.center){const rad=Math.PI/180,a=built.center,dy=(p.lat-a.lat)*rad,dx=(p.lng-a.lng)*rad,v=Math.sin(dy/2)**2+Math.cos(a.lat*rad)*Math.cos(p.lat*rad)*Math.sin(dx/2)**2;if(6371*2*Math.atan2(Math.sqrt(v),Math.sqrt(1-v))>built.radiusKm)return false;}const k=fold(p.name)+':'+p.lat.toFixed(4)+':'+p.lng.toFixed(4);if(seen.has(k))return false;seen.add(k);return true;});
  return {places,nextPageToken:null,source:'openstreetmap',center:built.center||(places.length?{lat:places.reduce((n,p)=>n+p.lat,0)/places.length,lng:places.reduce((n,p)=>n+p.lng,0)/places.length}:null),region:built.city,disclaimer:'© OpenStreetMap contributors · ODbL. Dados colaborativos: cobertura e contatos podem estar incompletos. Sem notas ou avaliações do Google.'};
 }
 export async function detailOSM(id){
@@ -93,5 +94,5 @@ export async function detailOSM(id){
  if(!match)throw fail('Identificador OpenStreetMap inválido.',400,'ID');
  const raw=await overpass(`[out:json][timeout:20];${match[1]}(${match[2]});out body center 1;`);
  if(!raw.elements.length)throw fail('Estabelecimento não encontrado na fonte aberta.',404,'NOT_FOUND');
- return {place:normalizeOSM(raw.elements[0]),source:'openstreetmap'};
+ return {place:applyVerifiedContacts(normalizeOSM(raw.elements[0])),source:'openstreetmap'};
 }
