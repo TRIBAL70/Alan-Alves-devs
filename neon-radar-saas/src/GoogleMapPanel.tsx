@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
-import {Radar,Crosshair,Layers3,MapPin,Orbit,Sun,Moon} from 'lucide-react';
+import {Radar,Layers3,MapPin,Orbit} from 'lucide-react';
 import type {Config,Place} from './main';
 
 // Native map styling keeps Google's labels and attribution crisp.
@@ -23,6 +23,21 @@ const NEON_STYLE=[
 ];
 const PIN_SVG='<svg xmlns="http://www.w3.org/2000/svg" width="44" height="52" viewBox="0 0 44 52"><path d="M22 49 7 30A20 20 0 1 1 37 30Z" fill="#061a30" stroke="#26dfff" stroke-width="2"/><circle cx="22" cy="21" r="12" fill="#0b3d59" stroke="#1694bd"/><path d="M22 12v18M13 21h18" stroke="#76efff" stroke-width="1.5"/><circle cx="22" cy="21" r="5" fill="#2ae6ff" stroke="#d3fdff" stroke-width="1.5"/></svg>';
 
+type AlienSymbol='target'|'energy'|'map'|'satellite'|'expand'|'eye'|'plus'|'minus';
+function AlienGlyph({symbol}:{symbol:AlienSymbol}){
+ const paths:Record<AlienSymbol,React.ReactNode>={
+  target:<><path d="m8 3-5 5v8l5 5h8l5-5V8l-5-5Z"/><path d="M12 1v6m0 10v6M1 12h6m10 0h6"/><circle cx="12" cy="12" r="3"/></>,
+  energy:<><path d="m12 2 9 5v10l-9 5-9-5V7Z"/><path d="m13 5-6 8h5l-1 6 6-9h-5Z"/></>,
+  map:<><path d="m3 5 6-2 6 3 6-2v15l-6 2-6-3-6 2Z"/><path d="M9 3v15m6-12v15M4 11l4-2m8 5 4-2"/></>,
+  satellite:<><path d="m9 7 8 8-4 4-8-8Zm-6-4 5 5m8 8 5 5M2 8l6-6 3 3-6 6Zm11 11 6-6 3 3-6 6Z"/><path d="M14 3a7 7 0 0 1 7 7m-7-3a3 3 0 0 1 3 3"/></>,
+  expand:<><path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6M3 3l5 5m13-5-5 5M3 21l5-5m13 5-5-5"/></>,
+  eye:<><path d="M2 6c4-4 16-4 20 0l-2 10-8 6-8-6Z"/><path d="m5 8 5 3-1 4-4-3Zm14 0-5 3 1 4 4-3ZM11 18h2"/></>,
+  plus:<><path d="m8 2-6 6v8l6 6m8-20 6 6v8l-6 6M12 6v12M6 12h12"/></>,
+  minus:<><path d="m8 2-6 6v8l6 6m8-20 6 6v8l-6 6M6 12h12"/></>
+ };
+ return <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[symbol]}</svg>;
+}
+
 // Share one script across dashboard, map view and place dialogs.
 let loading:Promise<void>|undefined;
 const authListeners=new Set<()=>void>();
@@ -43,8 +58,9 @@ function loadGoogle(key:string){
  return loading;
 }
 export function GoogleMapPanel({places,config,origin,onSelect,onAlternative}:{places:Place[];config:Config;origin:{lat:number;lng:number};onSelect:(p:Place)=>void;onAlternative:()=>void}){
- const div=useRef<HTMLDivElement>(null),map=useRef<any>(null),markers=useRef<any[]>([]);
- const [ready,setReady]=useState(false),[error,setError]=useState(''),[neon,setNeon]=useState(true);
+ const shell=useRef<HTMLDivElement>(null),div=useRef<HTMLDivElement>(null),map=useRef<any>(null),markers=useRef<any[]>([]);
+ const [ready,setReady]=useState(false),[error,setError]=useState(''),[neon,setNeon]=useState(true),[mapType,setMapType]=useState<'roadmap'|'hybrid'>('roadmap'),[expanded,setExpanded]=useState(false),[street,setStreet]=useState(false);
+ const [controlNote,setControlNote]=useState('');
  const neonRef=useRef(neon);neonRef.current=neon;
  useEffect(()=>{
   let active=true;
@@ -55,8 +71,11 @@ export function GoogleMapPanel({places,config,origin,onSelect,onAlternative}:{pl
   loadGoogle(config.googleBrowserKey).then(()=>{
    if(!active||!div.current)return;
    const gm=(window as any).google.maps;
-   // Style only the basemap; leave native controls and attribution visible.
-   map.current=new gm.Map(div.current,{center:origin,zoom:12,mapTypeId:'roadmap',styles:neonRef.current?NEON_STYLE:[],mapTypeControl:true,fullscreenControl:true,streetViewControl:true,zoomControl:true,gestureHandling:'cooperative'});
+   // Custom controls replace default UI; Google attribution remains untouched.
+   map.current=new gm.Map(div.current,{center:origin,zoom:12,mapTypeId:'roadmap',styles:neonRef.current?NEON_STYLE:[],disableDefaultUI:true,keyboardShortcuts:true,gestureHandling:'cooperative'});
+   const panorama=map.current.getStreetView();
+   panorama.setOptions({disableDefaultUI:true,enableCloseButton:false});
+   panorama.addListener('visible_changed',()=>{if(active)setStreet(panorama.getVisible());});
    setReady(true);
   }).catch(e=>{if(active)setError(e.message);});
   return()=>{active=false;authListeners.delete(denied);markers.current.forEach(m=>m.setMap(null));markers.current=[];map.current=null;};
@@ -77,13 +96,38 @@ export function GoogleMapPanel({places,config,origin,onSelect,onAlternative}:{pl
   else {m.setCenter(origin);m.setZoom(12);}
  },[places,origin,onSelect,ready]);
  useEffect(()=>{if(ready&&map.current)map.current.setOptions({styles:neon?NEON_STYLE:[]});},[neon,ready]);
+ useEffect(()=>{if(ready&&map.current)map.current.setMapTypeId(mapType);},[mapType,ready]);
+ useEffect(()=>{const sync=()=>setExpanded(document.fullscreenElement===shell.current);document.addEventListener('fullscreenchange',sync);return()=>document.removeEventListener('fullscreenchange',sync);},[]);
+ const fullscreen=async()=>{
+  if(document.fullscreenElement===shell.current){await document.exitFullscreen();return;}
+  if(expanded){setExpanded(false);return;}
+  if(shell.current?.requestFullscreen){try{await shell.current.requestFullscreen();return;}catch{/* Use a responsive expanded panel when fullscreen is unavailable. */}}
+  setExpanded(true);
+ };
+ const streetView=()=>{
+  const m=map.current;if(!m)return;const panorama=m.getStreetView();
+  if(panorama.getVisible()){panorama.setVisible(false);return;}
+  setControlNote('Buscando Street View nesta região...');
+  const gm=(window as any).google.maps;
+  new gm.StreetViewService().getPanorama({location:m.getCenter(),radius:1000},(data:any,status:string)=>{
+   if(status==='OK'&&data?.location?.pano){panorama.setPano(data.location.pano);panorama.setVisible(true);setControlNote('');}
+   else setControlNote('Street View indisponível neste ponto. Mova o mapa e tente novamente.');
+  });
+ };
+ const zoom=(step:number)=>{const m=map.current;if(m)m.setZoom(Math.max(0,Math.min(21,(m.getZoom()??12)+step)));};
  const center=()=>{if(!map.current)return;map.current.panTo(origin);map.current.setZoom(12);};
- return <div className={'map-stage google-map neon-map-shell '+(neon?'is-neon':'is-standard')}>
+ return <div ref={shell} className={'map-stage google-map neon-map-shell '+(neon?'is-neon':'is-standard')+(expanded?' alien-expanded':'')}>
   <div className="neon-map-toolbar">
    <div className="neon-map-brand"><span className="neon-map-emblem"><Radar size={23}/></span><span><small>NEON RADAR</small><strong>Visão geográfica</strong></span></div>
-   <div className="neon-map-actions"><span className="neon-map-badge"><Orbit size={13}/>{ready?'GOOGLE MAPS':error?'INDISPONÍVEL':'CONECTANDO'}</span><button type="button" onClick={center} disabled={!ready} title="Centralizar na região selecionada" aria-label="Centralizar mapa"><Crosshair size={18}/></button><button type="button" onClick={()=>setNeon(v=>!v)} aria-pressed={neon} title={neon?'Usar cores padrão':'Ativar visual neon'} aria-label={neon?'Usar cores padrão':'Ativar visual neon'}>{neon?<Sun size={18}/>:<Moon size={18}/>}</button></div>
+   <div className="neon-map-actions"><span className="neon-map-badge"><Orbit size={13}/>{ready?'GOOGLE MAPS':error?'INDISPONÍVEL':'CONECTANDO'}</span><button type="button" onClick={center} disabled={!ready} title="Centralizar na região selecionada" aria-label="Centralizar mapa"><AlienGlyph symbol="target"/></button><button type="button" onClick={()=>setNeon(v=>!v)} aria-pressed={neon} title={neon?'Usar cores padrão':'Ativar visual neon'} aria-label={neon?'Usar cores padrão':'Ativar visual neon'}><AlienGlyph symbol="energy"/></button></div>
   </div>
   <div className="neon-map-viewport"><div ref={div} className="map-native" aria-label={neon?'Google Maps com estilo azul neon':'Google Maps em visualização padrão'}/><div className="neon-map-corners" aria-hidden="true"><i/><i/><i/><i/></div>
+   {ready&&<div className="alien-map-controls">
+    <div className="alien-map-modes" role="group" aria-label="Tipo de mapa"><button type="button" className="alien-control alien-mode" aria-pressed={mapType==='roadmap'} onClick={()=>{map.current?.getStreetView().setVisible(false);setMapType('roadmap');}}><AlienGlyph symbol="map"/><span>Mapa</span></button><button type="button" className="alien-control alien-mode" aria-pressed={mapType==='hybrid'} onClick={()=>{map.current?.getStreetView().setVisible(false);setMapType('hybrid');}}><AlienGlyph symbol="satellite"/><span>Satélite</span></button></div>
+    <button type="button" className="alien-control alien-fullscreen" aria-label={expanded?'Sair da tela cheia':'Expandir mapa'} aria-pressed={expanded} title={expanded?'Sair da tela cheia':'Expandir mapa'} onClick={fullscreen}><AlienGlyph symbol="expand"/></button>
+    <div className="alien-navigation" role="group" aria-label="Navegação no mapa"><button type="button" className="alien-control alien-street" aria-label={street?'Voltar ao mapa':'Abrir Street View'} aria-pressed={street} title={street?'Voltar ao mapa':'Explorar Street View'} onClick={streetView}><AlienGlyph symbol="eye"/></button><div className="alien-zoom"><button type="button" className="alien-control" aria-label="Aumentar zoom" onClick={()=>zoom(1)}><AlienGlyph symbol="plus"/></button><span aria-hidden="true"/><button type="button" className="alien-control" aria-label="Diminuir zoom" onClick={()=>zoom(-1)}><AlienGlyph symbol="minus"/></button></div></div>
+    {controlNote&&<div className="alien-control-note" role="status">{controlNote}<button type="button" aria-label="Fechar aviso" onClick={()=>setControlNote('')}>×</button></div>}
+   </div>}
    {!ready&&!error&&<div className="google-map-message" role="status"><Radar size={30}/>Carregando Google Maps...</div>}
    {error&&<div className="google-map-message" role="alert"><p>{error}</p><button className="outline-btn" onClick={onAlternative}>Abrir mapa alternativo</button></div>}
   </div>
