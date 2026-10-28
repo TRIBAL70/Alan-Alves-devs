@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, Linking, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
-const URL = 'https://alan-alves-dev.lovable.app/';
+const URL = 'https://alan-alves-dev-tribal70.onrender.com/#sobre';
 export default function App() {
   const browser = useRef(null);
   const [canGoBack, setCanGoBack] = useState(false);
