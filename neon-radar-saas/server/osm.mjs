@@ -43,7 +43,7 @@ export function buildSearch(data){
  if(split){term=split[1];location=split[2].replace(/[,\s]+(?:rs|sp|rj|pr|mg|pe|brasil|br)$/i,'').trim();}
  const city=CITIES.find(([name])=>fold(location||query).includes(fold(name)));
  if(city&&!split)term=query.replace(new RegExp(literal(city[0]),'i'),'').replace(/\b(?:rs|sp|rj|pr|mg|pe)\b/gi,'').trim();
- const center=city?{lat:city[1],lng:city[2]}:point(data.center)?data.center:null;
+ const center=location&&!city?null:city?{lat:city[1],lng:city[2]}:point(data.center)?data.center:null;
  const category=categories.find(([re])=>re.test(fold(term)));
  const filter=category?(category[1][1].includes('|')?`[${quoted(category[1][0])}~${quoted('^('+category[1][1]+')$')}]`:`[${quoted(category[1][0])}=${quoted(category[1][1])}]`):'';
  const nameFilter=category?'':`["name"~${quoted(literal(term||query))},i]`;
@@ -52,10 +52,10 @@ export function buildSearch(data){
  if(location&&!city){
   prefix=`area["ISO3166-1"="BR"]["admin_level"="2"]->.country;rel(area.country)["boundary"="administrative"]["admin_level"="8"]["name"~${quoted('^'+literal(location)+'$')},i];map_to_area->.region;`;
   scope='area.region';
- }else if(center)scope=`around:${radius},${center.lat},${center.lng}`;
+ }else if(center){const dy=radius/111320,dx=dy/Math.max(0.1,Math.cos(center.lat*Math.PI/180));scope=`${Math.max(-90,center.lat-dy)},${Math.max(-180,center.lng-dx)},${Math.min(90,center.lat+dy)},${Math.min(180,center.lng+dx)}`;}
  else throw fail('Escolha uma região ou pesquise no formato “restaurantes em Porto Alegre”.',400,'REGION');
  const selectors=filter?[`nwr(${scope})${filter}["name"]`]:['amenity','shop','leisure','tourism','office','craft'].map(k=>`nwr(${scope})[${quoted(k)}]${nameFilter}`);
- return {query:`[out:json][timeout:20][maxsize:134217728];${prefix}(${selectors.map(s=>s+';').join('')});out body center 60;`,center,city:city?.[0]||location||null};
+ return {query:`[out:json][timeout:20][maxsize:134217728];${prefix}(${selectors.map(s=>s+';').join('')});out body center 60;`,center,radiusKm:radius/1000,city:city?.[0]||location||null};
 }
 async function overpass(query){
  const found=cache.get(query);if(found&&found.until>Date.now())return found.data;
@@ -68,7 +68,7 @@ async function overpass(query){
   // One bounded request at a time. No retries or harvesting across public instances.
   requests++;lastRequest=Date.now();
   try{
-   const res=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','User-Agent':USER_AGENT},body:new URLSearchParams({data:query}),signal:AbortSignal.timeout(26000)});
+   const res=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','User-Agent':USER_AGENT},body:new URLSearchParams({data:query}),signal:AbortSignal.timeout(60000)});
    if(!res.ok)throw fail(res.status===429?'A fonte OpenStreetMap está ocupada. Aguarde e tente novamente.':'A fonte OpenStreetMap está temporariamente indisponível.',res.status===429?429:503);
    let size=0;const chunks=[];
    for await(const chunk of res.body){size+=chunk.length;if(size>MAX_BYTES)throw fail('A consulta retornou dados demais. Reduza o raio da pesquisa.',400,'OSM_SIZE');chunks.push(Buffer.from(chunk));}
@@ -85,8 +85,8 @@ async function overpass(query){
 export async function searchOSM(data){
  if(data.openNow===true)throw fail('A fonte aberta não informa “aberto agora” com segurança. Consulte o horário cadastrado nos detalhes.',400,'UNSUPPORTED_FILTER');
  const built=buildSearch(data),raw=await overpass(built.query);
- const seen=new Set();const places=raw.elements.map(normalizeOSM).filter(p=>{if(!p.name||p.lat===null||p.lng===null)return false;const k=fold(p.name)+':'+p.lat.toFixed(4)+':'+p.lng.toFixed(4);if(seen.has(k))return false;seen.add(k);return true;});
- return {places,nextPageToken:null,source:'openstreetmap',center:built.center,region:built.city,disclaimer:'© OpenStreetMap contributors · ODbL. Dados colaborativos: cobertura e contatos podem estar incompletos. Sem notas ou avaliações do Google.'};
+ const seen=new Set();const places=raw.elements.map(normalizeOSM).filter(p=>{if(!p.name||p.lat===null||p.lng===null)return false;if(built.center){const rad=Math.PI/180,a=built.center,dy=(p.lat-a.lat)*rad,dx=(p.lng-a.lng)*rad,v=Math.sin(dy/2)**2+Math.cos(a.lat*rad)*Math.cos(p.lat*rad)*Math.sin(dx/2)**2;if(6371*2*Math.atan2(Math.sqrt(v),Math.sqrt(1-v))>built.radiusKm)return false;}const k=fold(p.name)+':'+p.lat.toFixed(4)+':'+p.lng.toFixed(4);if(seen.has(k))return false;seen.add(k);return true;});
+ return {places,nextPageToken:null,source:'openstreetmap',center:built.center||(places.length?{lat:places.reduce((n,p)=>n+p.lat,0)/places.length,lng:places.reduce((n,p)=>n+p.lng,0)/places.length}:null),region:built.city,disclaimer:'© OpenStreetMap contributors · ODbL. Dados colaborativos: cobertura e contatos podem estar incompletos. Sem notas ou avaliações do Google.'};
 }
 export async function detailOSM(id){
  const match=/^osm_(node|way|relation)_(\d{1,15})$/.exec(id);

@@ -32,9 +32,9 @@ Esta configuração usa serviços públicos comunitários para uso inicial de ba
 
 - Cache de 30 minutos, até 150 consultas; respostas limitadas a 60 registros e 1,5 MB.
 - Uma consulta upstream por vez, intervalo mínimo de dois segundos, no máximo duas consultas aguardando/executando.
-- Limite máximo de 20 chamadas upstream por dia UTC/instância, 26 segundos por consulta e raio de até 20 km. Sem retries automáticos em instâncias públicas.
+- Limite máximo de 20 chamadas upstream por dia UTC/instância, 20 segundos de processamento e até 60 segundos de espera pela resposta e raio de até 20 km. Sem retries automáticos em instâncias públicas.
 - Limite de 30 operações OSM por usuário/dia. Os contadores e o cache são em memória e reiniciam com a instância. Para múltiplas instâncias, usar um limitador/cache compartilhado e um provedor com capacidade contratada ou infraestrutura própria.
-- `OSM_WARM_QUERY`, opcional, pré-carrega uma única consulta no início da instância e registra apenas contagem/fonte para verificação operacional.
+- `OSM_WARM_QUERY`, opcional, pré-carrega uma única consulta de raio 2 km no início da instância e registra apenas contagem/fonte para verificação operacional.
 - `OSM_OVERPASS_URL` permite trocar o servidor sem alterar código. `OSM_MAX_UPSTREAM_DAILY` pode reduzir o limite, nunca ultrapassando 20 nesta configuração pública.
 - `OSM_TILE_URL` permite trocar o provedor de imagens do mapa. Ao trocar, revisar também a atribuição exigida pelo provedor.
 - Respeitar https://operations.osmfoundation.org/policies/tiles/ e a política do operador Overpass escolhido. Tiles são carregados normalmente pelo navegador, sem prefetch ou download offline.
