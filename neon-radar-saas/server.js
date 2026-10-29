@@ -1,6 +1,5 @@
-// Hostinger-compatible entry point for Neon Radar.
-// Build the Vite frontend if the hosting platform installed dependencies
-// but did not run the package build script.
+// Hostinger LiteSpeed loads this entry using require(), so do not use
+// top-level await here. The Neon Radar server remains in server/index.mjs.
 import { existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -10,7 +9,7 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 const frontend = path.join(root, 'dist', 'index.html');
 
 if (!existsSync(frontend)) {
-  console.log('[NEON HOSTINGER] dist/index.html missing; building frontend...');
+  console.log('[NEON HOSTINGER] Frontend missing; running npm run build...');
   const result = spawnSync('npm', ['run', 'build'], {
     cwd: root,
     stdio: 'inherit',
@@ -18,8 +17,14 @@ if (!existsSync(frontend)) {
     timeout: 180_000,
   });
   if (result.error || result.status !== 0 || !existsSync(frontend)) {
-    console.error('[NEON HOSTINGER] Frontend build failed. Ensure devDependencies are installed and inspect deployment logs.', result.error?.message || result.status);
-    process.exit(1);
+    console.error('[NEON HOSTINGER] Frontend build failed; inspect runtime logs.', result.error?.message || result.status);
+    process.exitCode = 1;
   }
 }
-await import('./server/index.mjs');
+
+if (process.exitCode !== 1) {
+  import('./server/index.mjs').catch((error) => {
+    console.error('[NEON HOSTINGER] Server startup failed:', error);
+    process.exitCode = 1;
+  });
+}
