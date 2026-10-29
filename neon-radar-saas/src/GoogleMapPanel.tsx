@@ -129,6 +129,6 @@ export function GoogleMapPanel({places,config,origin,onSelect,onAlternative}:{pl
    {!ready&&!error&&<div className="google-map-message" role="status"><Radar size={30}/>Carregando Google Maps...</div>}
    {error&&<div className="google-map-message" role="alert"><p>{error}</p><button className="outline-btn" onClick={onAlternative}>Abrir mapa alternativo</button></div>}
   </div>
-  <div className="neon-map-footer"><span><Layers3 size={13}/>{neon?'VISUAL NEON':'VISUAL PADRÃO'}</span><span><MapPin size={13}/>{places.filter(p=>p.lat!=null&&p.lng!=null).length} pontos da busca</span>{places.length>0&&<small>Estabelecimentos: © OpenStreetMap</small>}</div>
+  <div className="neon-map-footer"><span><Layers3 size={13}/>{neon?'VISUAL NEON':'VISUAL PADRÃO'}</span><span><MapPin size={13}/>{places.filter(p=>p.lat!=null&&p.lng!=null).length} pontos da busca</span>{places.length>0&&<small>Fonte dos estabelecimentos: {config.provider==='google'?'Google Places':'OpenStreetMap'}</small>}</div>
  </div>;
 }
