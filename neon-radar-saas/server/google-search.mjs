@@ -2,7 +2,7 @@ import {normalizeGoogle} from './place-preview.mjs';
 
 const API='https://places.googleapis.com/v1/places:searchText';
 const MAX_RESULTS=20;
-const city=/\\b(?:em|no|na)\\s+(.+)$/i;
+const city=/\b(?:em|no|na)\s+(.+)$/i;
 
 export async function searchGoogle(data,key,fetcher=fetch){
  if(!key)throw Object.assign(new Error('Chave Google Places não configurada no servidor.'),{status:503,code:'GOOGLE_NOT_CONFIGURED'});
