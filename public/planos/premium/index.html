@@ -1,0 +1,215 @@
+<!DOCTYPE html><html lang="pt-BR" class="dark"><head><script src="/copy-client.js"></script><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="/assets/fonts.css" data-precedence="default"/><link rel="stylesheet" href="/assets/styles-B6zBtKll.css" data-precedence="default"/><title>Plano Premium — BarbeiroPro</title><meta name="description" content="Site, agendamento online e painel completo para sua barbearia."/><meta property="og:title" content="Plano Premium — BarbeiroPro"/><meta property="og:description" content="Site, agendamento online e painel completo para sua barbearia."/><meta property="og:type" content="website"/><meta name="twitter:card" content="summary"/><link rel="modulepreload" href="/assets/index-i4glomAL.js"/><link rel="modulepreload" href="/assets/jsx-runtime-B-hcVAMW.js"/><link rel="modulepreload" href="/assets/react-dom-8HkkFvw6.js"/><link rel="modulepreload" href="/assets/not-found-i5RsCZif.js"/><link rel="modulepreload" href="/assets/invariant-CgFvOqN2.js"/><link rel="modulepreload" href="/assets/link-DYTdnZ8s.js"/><link rel="modulepreload" href="/assets/matchContext-B0YTMpvO.js"/><link rel="modulepreload" href="/assets/preload-helper-Dmo4H_Zz.js"/><link rel="modulepreload" href="/assets/useSelector-w2QMMrCf.js"/><link rel="modulepreload" href="/assets/plans-DBqUFdOl.js"/><link rel="modulepreload" href="/assets/planos._plano-BIS5Hqdl.js"/><link rel="modulepreload" href="/assets/planos._plano-CiNTDQNf.js"/><link rel="modulepreload" href="/assets/check-BhCV6_NJ.js"/><link rel="modulepreload" href="/assets/message-circle-DM--AgHg.js"/><link rel="modulepreload" href="/assets/slots-DUhtC646.js"/><link rel="modulepreload" href="/assets/button-jIfkhrNv.js"/><link rel="modulepreload" href="/assets/Animated-Bog41CxA.js"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link rel="icon" href="/favicon.ico" type="image/x-icon"/>
+<style>
+	#lovable-badge {
+		--badge-bg: #1b1b1b;
+		--badge-text: #c5c1b9;
+		--badge-text-hover: #dcdad5;
+		--badge-radius: 6px;
+		--badge-padding: 8px;
+		--badge-gap: 6px;
+		--badge-shadow: 
+			0 0 0 1px rgba(0, 0, 0, 0.88),
+			0 1px 0 0 rgba(0, 0, 0, 0.04),
+			0 2px 2px -1px rgba(0, 0, 0, 0.08),
+			0 4px 4px -2px rgba(0, 0, 0, 0.08),
+			0 8px 8px -4px rgba(0, 0, 0, 0.08),
+			0 16px 16px -8px rgba(0, 0, 0, 0.08);
+		--badge-transition-duration: 0.2s;
+		--badge-transition-easing: cubic-bezier(0.16, 1, 0.32, 1);
+		--focus-color: #575ECF;
+		--focus-offset: 2px;
+		--focus-width: 2px;
+		
+		position: fixed;
+		bottom: 12px;
+		right: 12px;
+		height: 24px;
+		display: flex;
+		align-items: center;
+		z-index: 1000000;
+		background-color: var(--badge-bg) !important;
+		color: var(--badge-text) !important;
+		border-radius: var(--badge-radius);
+		box-shadow: var(--badge-shadow) !important;
+		font-size: 12px;
+		font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+		font-weight: 400 !important;
+		text-transform: none !important;
+		font-feature-settings: normal !important;
+		transform: translateZ(0);
+		will-change: transform, opacity;
+		transition: opacity var(--badge-transition-duration) var(--badge-transition-easing);
+	}
+
+	#lovable-badge.closing {
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	#lovable-badge-cta {
+		display: flex;
+		align-items: baseline;
+		gap: var(--badge-gap);
+		box-sizing: border-box;
+		padding: 4px var(--badge-padding) 0;
+		height: 100%;
+		color: inherit;
+		text-decoration: none;
+		white-space: nowrap;
+		border-radius: var(--badge-radius) 0 0 var(--badge-radius);
+		transition: 
+			background-color var(--badge-transition-duration) ease,
+			color var(--badge-transition-duration) ease,
+			transform 0.1s ease;
+	}
+
+	#lovable-badge-cta:hover {
+		background: rgba(255, 255, 255, 0.04);
+		color: var(--badge-text-hover);
+	}
+
+	#lovable-badge-cta:active {
+		transform: scale(0.98);
+	}
+
+	#lovable-badge-cta:focus {
+		outline: none;
+	}
+
+	#lovable-badge-cta:focus-visible {
+		outline: var(--focus-width) solid var(--focus-color);
+		outline-offset: var(--focus-offset);
+		z-index: 1;
+	}
+
+	#lovable-badge-text {
+		line-height: 1;
+	}
+
+	/* The wordmark baseline sits at y=12 of the 16px logo; an empty 12px box
+	   makes that the flex baseline so the text aligns to it on any system font. */
+	#lovable-badge-logo {
+		position: relative;
+		display: block;
+		width: 52px;
+		height: 12px;
+	}
+
+	#lovable-badge-logo svg {
+		position: absolute;
+		top: 0;
+		left: 0;
+	}
+
+	#lovable-badge-divider {
+		width: 1px;
+		height: 24px;
+		background-color: rgba(255, 255, 255, 0.04);
+		flex-shrink: 0;
+	}
+
+	#lovable-badge-close {
+		width: 24px;
+		height: 24px;
+		min-width: 24px;
+		min-height: 24px;
+		cursor: pointer;
+		background: none;
+		border: none;
+		padding: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 0 var(--badge-radius) var(--badge-radius) 0;
+		flex-shrink: 0;
+		transition: 
+			background-color var(--badge-transition-duration) ease,
+			transform 0.1s ease;
+	}
+
+	#lovable-badge-close:hover {
+		background: rgba(255, 255, 255, 0.04);
+	}
+
+	#lovable-badge-close:active {
+		transform: scale(0.92);
+	}
+
+	#lovable-badge-close:focus {
+		outline: none;
+	}
+
+	#lovable-badge-close:focus-visible {
+		outline: var(--focus-width) solid var(--focus-color);
+		outline-offset: calc(var(--focus-offset) * -1);
+		z-index: 1;
+	}
+
+	#lovable-badge-close svg path {
+		fill: var(--badge-text);
+		transition: fill var(--badge-transition-duration) ease;
+	}
+
+	#lovable-badge-close:hover svg path {
+		fill: var(--badge-text-hover);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		#lovable-badge,
+		#lovable-badge-cta,
+		#lovable-badge-close,
+		#lovable-badge-close svg path {
+			transition: none;
+		}
+		
+		#lovable-badge-cta:active,
+		#lovable-badge-close:active {
+			transform: none;
+		}
+	}
+
+	@media (prefers-contrast: high) {
+		#lovable-badge {
+			--badge-bg: #000;
+			--badge-text: #fff;
+			--badge-text-hover: #fff;
+			border: 2px solid currentColor;
+		}
+		
+		#lovable-badge-cta:focus-visible,
+		#lovable-badge-close:focus-visible {
+			outline-width: 3px;
+		}
+	}
+</style>
+<meta name="twitter:title" content="Plano Premium — BarbeiroPro"><meta name="twitter:description" content="Site, agendamento online e painel completo para sua barbearia."><meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/lovp_4vcyn8ghc09rt98092a2k23hqh/586f8d126e6fc0733b435d56943c2c77_1792854593098.png"><meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/lovp_4vcyn8ghc09rt98092a2k23hqh/586f8d126e6fc0733b435d56943c2c77_1792854593098.png"></head><body><!--$--><main class="mx-auto max-w-3xl space-y-10 px-4 py-16 text-center"><div class="neon-frame inline-flex flex-col items-center px-6 py-4 " aria-label="Alan Barber"><span class="neon-text font-script text-4xl italic sm:text-5xl">Alan</span><span class="neon-text neon-flicker font-display text-5xl tracking-[0.3em] sm:text-6xl">BARBER</span><div class="mt-2 flex items-center gap-3 text-primary"><svg viewBox="0 0 64 64" class="neon-icon h-8 w-8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><g class="blade-top" style="transform-origin:32px 32px"><circle cx="12" cy="18" r="7"></circle><path d="M18 22 L56 40"></path></g><g class="blade-bottom" style="transform-origin:32px 32px"><circle cx="12" cy="46" r="7"></circle><path d="M18 42 L56 24"></path></g><circle cx="32" cy="32" r="2" fill="currentColor"></circle></svg><span class="neon-line h-px w-16"></span><svg viewBox="0 0 64 64" class="neon-icon clipper-buzz h-8 w-8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><rect x="22" y="18" width="20" height="40" rx="6"></rect><path d="M20 10 h24 v8 h-24 z"></path><path class="clipper-teeth" d="M22 6 v4 M27 6 v4 M32 6 v4 M37 6 v4 M42 6 v4"></path><circle cx="32" cy="34" r="3"></circle><g class="hair-fall"><path d="M14 4 l-2 6 M50 4 l2 6 M10 12 l-1 5 M54 12 l1 5" stroke-width="2"></path></g></svg></div></div><div class="reveal space-y-3"><h1 class="font-display text-6xl tracking-wide">BarbeiroPro <!-- -->Premium</h1><p class="text-muted-foreground">Site profissional, agendamento online e painel completo para sua barbearia.</p></div><div class="surface mx-auto max-w-md p-8 text-left"><p class="text-gold font-display text-5xl">R$ 199,00<span class="text-base text-muted-foreground">/mês</span></p><ul class="my-6 space-y-2"><li class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check h-5 w-5 text-primary" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>Tudo do Pro</li><li class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check h-5 w-5 text-primary" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>Barbeiros ilimitados</li><li class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check h-5 w-5 text-primary" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>Domínio próprio</li><li class="flex gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check h-5 w-5 text-primary" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>Suporte prioritário</li></ul><a href="https://wa.me/5511999999999?text=Ol%C3%A1!%20Quero%20assinar%20o%20plano%20Premium%20do%20BarbeiroPro." target="_blank" rel="noreferrer" class="inline-flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 bg-gold text-primary-foreground font-semibold uppercase tracking-wider shadow-gold transition-all hover:brightness-110 hover:-translate-y-0.5 h-12 rounded-md px-7 text-sm w-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle" aria-hidden="true"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"></path></svg> Quero esse plano</a></div><p class="text-sm text-muted-foreground">Outros planos: <a class="mx-2 text-primary underline" href="/planos/basico">Básico</a><a class="mx-2 text-primary underline" href="/planos/pro">Pro</a></p></main><script>(function(a,f){let l;try{l=JSON.parse(sessionStorage.getItem(a)||"{}")}catch{return}const n=l?.[f||history.state?.__TSR_key];let c=!1;for(const t in n){const e=n[t],o=e?.scrollX,s=e?.scrollY;if(Number.isFinite(o)&&Number.isFinite(s)){if(t==="window")scrollTo(o,s),c=!0;else if(t)try{const r=document.querySelector(t);r&&(r.scrollLeft=o,r.scrollTop=s)}catch{}}}if(c)return;const i=location.hash.slice(1);if(i){const t=history.state?.__hashScrollIntoViewOptions??!0;if(t){const e=document.getElementById(i);e&&e.scrollIntoView(t)}return}scrollTo(0,0)})("tsr-scroll-restoration-v1_3");document.currentScript.remove()</script><!--/$--><section aria-label="Notifications alt+T" tabindex="-1" aria-live="polite" aria-relevant="additions text" aria-atomic="false"></section><script data-tsr-stream-part="">(self.$R=self.$R||{})["tsr"]=[];self.$_TSR={h(){this.hydrated=!0,this.c()},e(){this.streamEnded=!0,this.c()},c(){this.hydrated&&this.streamEnded&&(delete self.$_TSR,delete self.$R.tsr)},p(e){this.initialized?e():this.buffer.push(e)},buffer:[]};$_TSR.router=($R=>$R[0]={manifest:$R[1]={routes:$R[2]={__root__:$R[3]={preloads:$R[4]=["/assets/index-i4glomAL.js","/assets/jsx-runtime-B-hcVAMW.js","/assets/react-dom-8HkkFvw6.js","/assets/not-found-i5RsCZif.js","/assets/invariant-CgFvOqN2.js","/assets/link-DYTdnZ8s.js","/assets/matchContext-B0YTMpvO.js","/assets/preload-helper-Dmo4H_Zz.js","/assets/useSelector-w2QMMrCf.js","/assets/plans-DBqUFdOl.js"],scripts:$R[5]=[$R[6]={attrs:$R[7]={type:"module",async:!0,src:"/assets/index-i4glomAL.js"}}]},"/planos/$plano":$R[8]={preloads:$R[9]=["/assets/planos._plano-BIS5Hqdl.js","/assets/planos._plano-CiNTDQNf.js","/assets/check-BhCV6_NJ.js","/assets/message-circle-DM--AgHg.js","/assets/slots-DUhtC646.js","/assets/button-jIfkhrNv.js","/assets/Animated-Bog41CxA.js"]}}},matches:$R[10]=[$R[11]={i:"__root__ ",u:1792890370004,s:"success",ssr:!0},$R[12]={i:" planos $plano planos premium",u:1792890370004,s:"success",l:$R[13]={plan:$R[14]={id:"premium",name:"Premium",price:199,tagline:"Para redes e equipes grandes",features:$R[15]=["Tudo do Pro","Barbeiros ilimitados","Domínio próprio","Suporte prioritário"]}},ssr:!0}]})($R["tsr"]);$_TSR.e();{let s=document.currentScript,p;while((p=s.previousElementSibling)&&p.hasAttribute('data-tsr-stream-part'))p.remove();s.remove()}</script><script type="module" async="" src="/assets/index-i4glomAL.js"></script><script>document.currentScript.remove();/*$tsr-stream-boundary*/</script>
+
+<script>
+	(() => {
+		if (window.self !== window.top || navigator.userAgent.includes('puppeteer')) {
+			const badge = document.querySelector('#lovable-badge');
+			if (badge) {
+				badge.style.display = 'none';
+			}
+			return;
+		}
+
+		const closeButton = document.querySelector('#lovable-badge-close');
+		if (closeButton) {
+			closeButton.addEventListener('click', function(event) {
+				event.preventDefault();
+				event.stopPropagation();
+				const badge = document.querySelector('#lovable-badge');
+				if (badge) {
+					badge.classList.add('closing');
+					setTimeout(function() {
+						if (badge) {
+							badge.style.display = 'none';
+						}
+					}, 240);
+				}
+			});
+		}
+	})();
+</script>
+</body></html>

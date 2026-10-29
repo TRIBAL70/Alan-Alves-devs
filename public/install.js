@@ -1,0 +1,1 @@
+document.querySelectorAll('.download-app').forEach(b=>{b.textContent='Baixar Aplicativo';b.addEventListener('click',()=>location.assign('/download/alan-barber.apk'))});

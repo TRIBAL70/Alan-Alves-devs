@@ -1,0 +1,6 @@
+.env*
+*.db
+*.sqlite*
+*.jks
+*.keystore
+android/build/

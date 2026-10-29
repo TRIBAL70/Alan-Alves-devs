@@ -1,0 +1,9 @@
+.git
+.env*
+*.db
+*.sqlite*
+*.jks
+*.keystore
+android
+node_modules
+tests
