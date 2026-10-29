@@ -3,6 +3,7 @@ import {applyVerifiedContacts,mergeContactDetails} from '../shared/contact-data.
 import http from 'node:http';
 import {googlePreview,normalizeGoogle} from './place-preview.mjs';
 import { searchOSM, detailOSM } from './osm.mjs';
+import {searchGoogle} from './google-search.mjs';
 import { readFile, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
@@ -44,7 +45,7 @@ async function consumeQuota(req,user,kind='search'){
  }
  const key=clientIp(req)+':'+day+':'+kind;const n=(publicUsage.get(key)||0)+1;if(n>limit)throw Object.assign(new Error(ERROR_MSG.QUOTA),{status:429,code:'QUOTA'});publicUsage.set(key,n);return {remaining:limit-n};
 }
-function serverConfig(){return {paidApiRequiresLogin:PAID_API_AUTH,provider:'openstreetmap',places:true,google:!!process.env.GOOGLE_MAPS_SERVER_KEY,maps:true,auth:!!SUPA&&!!ANON,ai:!!OPENAI,supabaseUrl:SUPA||null,supabaseAnonKey:ANON||null,googleBrowserKey:process.env.GOOGLE_MAPS_BROWSER_KEY||process.env.VITE_GOOGLE_MAPS_BROWSER_KEY||null,tileUrl:process.env.OSM_TILE_URL||'https://tile.openstreetmap.org/{z}/{x}/{y}.png',demo:false,mode:'dados_abertos',plans:['gratuito','profissional','empresarial']};}
+function serverConfig(){return {paidApiRequiresLogin:PAID_API_AUTH,provider:process.env.GOOGLE_MAPS_SERVER_KEY?'google':'openstreetmap',places:true,google:!!process.env.GOOGLE_MAPS_SERVER_KEY,maps:true,auth:!!SUPA&&!!ANON,ai:!!OPENAI,supabaseUrl:SUPA||null,supabaseAnonKey:ANON||null,googleBrowserKey:process.env.GOOGLE_MAPS_BROWSER_KEY||process.env.VITE_GOOGLE_MAPS_BROWSER_KEY||null,tileUrl:process.env.OSM_TILE_URL||'https://tile.openstreetmap.org/{z}/{x}/{y}.png',demo:false,mode:'dados_abertos',plans:['gratuito','profissional','empresarial']};}
 async function api(req,res,url){if(!throttle(req))return err(res,429,'RATE_LIMIT','Muitas solicitações. Tente novamente em instantes.');
  const method=req.method, pathname=url.pathname;
  if(method==='GET'&&pathname==='/api/health')return json(res,200,{status:'ok',version:'1.1.0-osm'});
@@ -63,7 +64,7 @@ async function api(req,res,url){if(!throttle(req))return err(res,429,'RATE_LIMIT
  if(paidEndpoint&&PAID_API_AUTH&&!user)return err(res,401,'AUTH','Faça login para pesquisar e usar os recursos do Neon Radar.');
  if(method==='POST'&&pathname==='/api/places/search'){
   checkOSMQuota(req,user);
-  return json(res,200,await searchOSM(data));
+  return json(res,200,process.env.GOOGLE_MAPS_SERVER_KEY?await searchGoogle(data,process.env.GOOGLE_MAPS_SERVER_KEY):await searchOSM(data));
  }
  if(method==='POST'&&pathname==='/api/places/nearby'){
   if(!validPoint(data.center))return err(res,400,'COORD','Coordenadas inválidas.');
@@ -71,7 +72,7 @@ async function api(req,res,url){if(!throttle(req))return err(res,429,'RATE_LIMIT
   const query=clip(data.query)||names[data.types?.[0]];
   if(!query)return err(res,400,'INPUT','Escolha uma categoria para pesquisar nas proximidades.');
   checkOSMQuota(req,user);
-  return json(res,200,await searchOSM({...data,query}));
+  return json(res,200,process.env.GOOGLE_MAPS_SERVER_KEY?await searchGoogle({...data,query},process.env.GOOGLE_MAPS_SERVER_KEY):await searchOSM({...data,query}));
  }
  if(method==='GET'&&pathname.startsWith('/api/places/')){
   const id=pathname.slice('/api/places/'.length),google=id.startsWith('gmap_');
@@ -109,4 +110,4 @@ async function api(req,res,url){if(!throttle(req))return err(res,429,'RATE_LIMIT
 }
 const mime={'.js':'text/javascript','.css':'text/css','.html':'text/html','.svg':'image/svg+xml','.mp4':'video/mp4','.jpg':'image/jpeg','.png':'image/png','.woff2':'font/woff2','.json':'application/json','.webmanifest':'application/manifest+json'};
 async function staticFile(req,res,url){let rel=decodeURIComponent(url.pathname);if(rel==='/'||!path.extname(rel))rel='/index.html';const full=path.resolve(dist,'.'+rel);if(!full.startsWith(dist+path.sep))return err(res,403,'FORBIDDEN','Acesso negado.');try{const info=await stat(full);if(!info.isFile())throw Error('not a file');const file=await readFile(full);res.writeHead(200,{'Content-Type':mime[path.extname(full)]||'application/octet-stream','Cache-Control':['/index.html','/sw.js','/manifest.webmanifest','/offline.html'].includes(rel)?'no-store':'public, max-age=3600','X-Content-Type-Options':'nosniff','Referrer-Policy':'strict-origin-when-cross-origin','X-Frame-Options':'DENY'});if(req.method!=='HEAD')res.end(file);else res.end();}catch{return err(res,404,'NOT_FOUND','Arquivo indisponível.');}}
-const server=http.createServer(async(req,res)=>{let url;try{url=new URL(req.url||'/',`http://${req.headers.host||'localhost'}`);}catch{return err(res,400,'URL','URL inválida.');}try{if(url.pathname.startsWith('/api/'))await api(req,res,url);else if(req.method==='GET'||req.method==='HEAD')await staticFile(req,res,url);else err(res,405,'METHOD','Método não permitido.');}catch(e){const status=e.status||500;console.error('[NEON]',url.pathname,status,e.message);err(res,status,e.code||'UPSTREAM_ERROR',status===500?'Erro inesperado no servidor.':e.message);}}).listen(PORT,'0.0.0.0',()=>{console.log(`NEON RADAR listening on ${server.address().port}`); console.log('NEON RADAR readiness:',JSON.stringify({auth:!!(SUPA&&ANON),openai:!!OPENAI,provider:'openstreetmap',places:true,maps:true}));if(process.env.OSM_WARM_QUERY)searchOSM({query:process.env.OSM_WARM_QUERY,radiusKm:2}).then(r=>console.log('OSM live verification:',JSON.stringify({source:r.source,count:r.places.length,withCoordinates:r.places.filter(p=>p.lat!==null&&p.lng!==null).length}))).catch(e=>console.warn('OSM live verification:',e.message));});
+const server=http.createServer(async(req,res)=>{let url;try{url=new URL(req.url||'/',`http://${req.headers.host||'localhost'}`);}catch{return err(res,400,'URL','URL inválida.');}try{if(url.pathname.startsWith('/api/'))await api(req,res,url);else if(req.method==='GET'||req.method==='HEAD')await staticFile(req,res,url);else err(res,405,'METHOD','Método não permitido.');}catch(e){const status=e.status||500;console.error('[NEON]',url.pathname,status,e.message);err(res,status,e.code||'UPSTREAM_ERROR',status===500?'Erro inesperado no servidor.':e.message);}}).listen(PORT,'0.0.0.0',()=>{console.log(`NEON RADAR listening on ${server.address().port}`); console.log('NEON RADAR readiness:',JSON.stringify({auth:!!(SUPA&&ANON),openai:!!OPENAI,provider:process.env.GOOGLE_MAPS_SERVER_KEY?'google':'openstreetmap',places:true,maps:true}));if(process.env.OSM_WARM_QUERY)searchOSM({query:process.env.OSM_WARM_QUERY,radiusKm:2}).then(r=>console.log('OSM live verification:',JSON.stringify({source:r.source,count:r.places.length,withCoordinates:r.places.filter(p=>p.lat!==null&&p.lng!==null).length}))).catch(e=>console.warn('OSM live verification:',e.message));});
