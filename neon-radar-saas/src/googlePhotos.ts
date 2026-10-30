@@ -19,8 +19,17 @@ export async function browserGooglePhotos(place:Place,key:string,signal?:AbortSi
      if(matches.length!==1)return {...place,photos:[],photoNote:'Não foi possível confirmar a mesma unidade no Google. Nenhuma foto de outro local foi utilizada.'};
      id=matches[0].id;
     }
-    const item=new GooglePlace({id});
-    await item.fetchFields({fields:['displayName','formattedAddress','photos']});check();
+    let item=new GooglePlace({id});
+    const fetched=await item.fetchFields({fields:['displayName','formattedAddress','photos']});check();
+    item=fetched?.place||item;
+    console.info('[NEON PHOTO RESULT]',JSON.stringify({stage:'detail',id:item.id,name:item.displayName,count:item.photos?.length??0}));
+    // Resolve a possibly outdated listing ID against the same name and branch.
+    if(!item.photos?.length&&place.lat!=null&&place.lng!=null&&place.name!=='Estabelecimento no Google Maps'){
+     const found=await GooglePlace.searchByText({textQuery:[place.name,place.address].filter(Boolean).join(' ').slice(0,400),fields:['id','displayName','formattedAddress','location','photos'],language:'pt-BR',maxResultCount:3,locationBias:{center:{lat:place.lat,lng:place.lng},radius:200}});check();
+     const matches=(found.places||[]).filter((p:any)=>samePhotoPlace(place,{displayName:p.displayName,location:{lat:p.location?.lat(),lng:p.location?.lng()}}));
+     console.info('[NEON PHOTO RESULT]',JSON.stringify({stage:'search',matches:matches.length,counts:matches.map((p:any)=>p.photos?.length??0)}));
+     if(matches.length===1&&matches[0].photos?.length){item=matches[0];id=item.id;}
+    }
     const photos=(item.photos||[]).slice(0,3).map((photo:any)=>({url:photo.getURI({maxWidth:900}),source:'Google Maps',authors:(photo.authorAttributions||[]).map((a:any)=>({name:a.displayName||'Autor da foto',url:a.uri||null}))}));
     return {...place,name:item.displayName||place.name,address:item.formattedAddress||place.address,googlePlaceId:id,photos,photoNote:photos.length?undefined:'O Google não disponibilizou fotos para este estabelecimento nesta consulta.'};
    })(),
