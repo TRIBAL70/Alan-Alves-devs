@@ -1,22 +1,34 @@
 import {loadGoogle} from './GoogleMapPanel';
+import {samePhotoPlace} from '../shared/photo-match.mjs';
 import type {Place} from './main';
-// Only called after the authenticated detail endpoint has allowed the lookup.
-export async function browserGooglePhotos(place:Place,key:string):Promise<Place>{
- const id=place.googlePlaceId||(place.id.startsWith('gmap_')?place.id.slice(5):'');
- if(!id||place.photos?.length)return place;
+// Only called after the detail endpoint has checked login and the lookup quota.
+// Photo objects and media URIs are fetched afresh and never saved to storage.
+export async function browserGooglePhotos(place:Place,key:string,signal?:AbortSignal):Promise<Place>{
  let timer:ReturnType<typeof setTimeout>|undefined;
+ const check=()=>{if(signal?.aborted)throw new DOMException('Aborted','AbortError');};
  try{
-  const photos=await Promise.race([
+  const result=await Promise.race([
    (async()=>{
-    await loadGoogle(key);
-    const {Place:GooglePlace}=await (window as any).google.maps.importLibrary('places');
+    check();await loadGoogle(key);check();
+    const {Place:GooglePlace}=await (window as any).google.maps.importLibrary('places');check();
+    let id=place.googlePlaceId||(place.id.startsWith('gmap_')?place.id.slice(5):'');
+    if(!id){
+     if(place.lat==null||place.lng==null)return {...place,photos:[],photoNote:'Não foi possível identificar a ficha do Google para este local.'};
+     const found=await GooglePlace.searchByText({textQuery:[place.name,place.address].filter(Boolean).join(' ').slice(0,400),fields:['id','displayName','location'],language:'pt-BR',maxResultCount:3,locationBias:{center:{lat:place.lat,lng:place.lng},radius:200}});check();
+     const matches=(found.places||[]).filter((p:any)=>samePhotoPlace(place,{displayName:p.displayName,location:{lat:p.location?.lat(),lng:p.location?.lng()}}));
+     if(matches.length!==1)return {...place,photos:[],photoNote:'Não foi possível confirmar a mesma unidade no Google. Nenhuma foto de outro local foi utilizada.'};
+     id=matches[0].id;
+    }
     const item=new GooglePlace({id});
-    await item.fetchFields({fields:['photos']});
-    return (item.photos||[]).slice(0,3).map((photo:any)=>({url:photo.getURI({maxWidth:900}),source:'Google Maps',authors:(photo.authorAttributions||[]).map((a:any)=>({name:a.displayName||'Autor da foto',url:a.uri||null}))}));
+    await item.fetchFields({fields:['displayName','formattedAddress','photos']});check();
+    const photos=(item.photos||[]).slice(0,3).map((photo:any)=>({url:photo.getURI({maxWidth:900}),source:'Google Maps',authors:(photo.authorAttributions||[]).map((a:any)=>({name:a.displayName||'Autor da foto',url:a.uri||null}))}));
+    return {...place,name:item.displayName||place.name,address:item.formattedAddress||place.address,googlePlaceId:id,photos,photoNote:photos.length?undefined:'O Google não disponibilizou fotos para este estabelecimento nesta consulta.'};
    })(),
-   new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new Error('timeout')),15000);})
+   new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new Error('timeout')),20000);})
   ]);
-  return photos.length?{...place,photos,photoNote:undefined}:{...place,photoNote:'O Google não disponibilizou fotos desta ficha nas duas consultas. Abra a fonte original para conferir.'};
- }catch{return {...place,photoNote:'A busca alternativa de fotos do Google não ficou disponível. Confira se a Places API está autorizada para a chave do mapa.'};}
- finally{clearTimeout(timer);}
+  check();return result;
+ }catch(e){
+  check();
+  return {...place,photos:[],photoNote:'Não foi possível atualizar a foto no Google agora. Confira a autorização da Places API para a chave do mapa.'};
+ }finally{clearTimeout(timer);}
 }

@@ -40,3 +40,17 @@ test('NEON API: health, config, protective login and input errors', {timeout:150
   assert.equal(missing.status,404);
  }finally{processServer.kill('SIGTERM');await once(processServer,'exit').catch(()=>{});}
 });
+test('browser photo fallback is authorized only after quota and stops at the daily limit',{timeout:15000},async()=>{
+ const port=await randomPort();
+ const child=spawn(process.execPath,['server/index.mjs'],{cwd:new URL('..',import.meta.url).pathname,env:{...process.env,PORT:String(port),OSM_WARM_QUERY:'',SUPABASE_URL:'',VITE_SUPABASE_URL:'',GOOGLE_MAPS_SERVER_KEY:'',GOOGLE_MAPS_BROWSER_KEY:'public-browser-test',REQUIRE_AUTH_FOR_PAID_APIS:'false'},stdio:'ignore'});
+ try{
+  for(let i=0;i<60;i++){try{if((await fetch(`http://127.0.0.1:${port}/api/health`)).ok)break;}catch{}await new Promise(r=>setTimeout(r,60));}
+  for(let i=0;i<3;i++){
+   const response=await fetch(`http://127.0.0.1:${port}/api/places/gmap_ChIJfixture01`);
+   assert.equal(response.status,200);
+   const body=await response.json();assert.equal(body.browserPreviewAllowed,true);assert.deepEqual(body.place.photos,[]);
+  }
+  const denied=await fetch(`http://127.0.0.1:${port}/api/places/gmap_ChIJfixture01`);
+  assert.equal(denied.status,429);assert.equal((await denied.json()).error,'QUOTA');
+ }finally{child.kill('SIGTERM');await once(child,'exit').catch(()=>{});}
+});

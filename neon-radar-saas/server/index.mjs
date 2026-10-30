@@ -81,14 +81,16 @@ async function api(req,res,url){if(!throttle(req))return err(res,429,'RATE_LIMIT
   let result;
   if(!google){checkOSMQuota(req,user);result=await detailOSM(id);}
   else result={place:applyVerifiedContacts(normalizeGoogle({id:id.slice(5),displayName:{text:'Estabelecimento no Google Maps'}})),source:'google'};
+  const browserPreviewAllowed=!!serverConfig().googleBrowserKey;
+  // Authorize and charge the detail lookup before either Google transport is used.
+  if(key||browserPreviewAllowed)await consumeQuota(req,user,'detail');
   if(key){
    try{
-    await consumeQuota(req,user,'detail');
     const extra=await googlePreview(result.place,key);
     if(extra){result={...result,place:google?applyVerifiedContacts(extra):mergeContactDetails(result.place,extra),previewSource:'google'};}else{result.place.contactsStatus=result.place.contactsStatus||'unconfirmed';result.previewNote='Não foi possível confirmar o mesmo estabelecimento no Google. Consulte a ficha original.';}
-   }catch(e){if(google&&result.place.contactsStatus!=='verified')return err(res,e.status||503,e.code||'GOOGLE_PREVIEW',e.message);result.previewNote=e.message;result.place.contactsStatus=result.place.contactsStatus||'unavailable';}
-  }else if(google&&result.place.contactsStatus!=='verified')return err(res,503,'GOOGLE_PREVIEW','Fotos e contatos do Google ainda precisam da chave do servidor e da Places API.');
-  return json(res,200,{...result,verification:verificationFor(result)});
+   }catch(e){if(google&&!browserPreviewAllowed&&result.place.contactsStatus!=='verified')return err(res,e.status||503,e.code||'GOOGLE_PREVIEW',e.message);result.previewNote=e.message;result.place.contactsStatus=result.place.contactsStatus||'unavailable';}
+  }else if(google&&!browserPreviewAllowed&&result.place.contactsStatus!=='verified')return err(res,503,'GOOGLE_PREVIEW','Fotos e contatos do Google ainda precisam da chave do servidor e da Places API.');
+  return json(res,200,{...result,browserPreviewAllowed,verification:verificationFor(result)});
  }
  if(method==='POST'&&pathname==='/api/places/autocomplete')return json(res,200,{suggestions:[],source:'openstreetmap'});
  if(method==='POST'&&pathname==='/api/routes'){

@@ -120,10 +120,10 @@ function NeoRadar(){const[entered,setEntered]=useState(()=>sessionStorage.getIte
   const request=++previewRequest.current;selectedId.current=p.id;pendingPreview.current=p;
   setSelected(p);setDetails(p);setPreviewNote('');setPreviewLoading(true);setVerification({status:'checking'});
   try{
-   const v=await api<{place:Place;previewNote?:string;verification?:Verification}>(`/api/places/${encodeURIComponent(p.id)}`,'GET',undefined,await token(),controller.signal);
+   const v=await api<{place:Place;previewNote?:string;browserPreviewAllowed?:boolean;verification?:Verification}>(`/api/places/${encodeURIComponent(p.id)}`,'GET',undefined,await token(),controller.signal);
    if(request===previewRequest.current&&selectedId.current===p.id){
-    let resolved=applyVerifiedContacts({...p,...v.place});
-    if(!resolved.photos?.length&&config.googleBrowserKey)resolved=await browserGooglePhotos(resolved,config.googleBrowserKey);
+    let resolved:Place=applyVerifiedContacts({...p,...v.place,photos:v.place.photos||[]});
+    if(!resolved.photos?.length&&config.googleBrowserKey&&v.browserPreviewAllowed)resolved=await browserGooglePhotos(resolved,config.googleBrowserKey,controller.signal);
     if(controller.signal.aborted||request!==previewRequest.current||selectedId.current!==p.id)return;
     pendingPreview.current=resolved;setDetails(resolved);
     setPlaces(items=>items.map(item=>item.id===p.id?{...item,...resolved}:item));

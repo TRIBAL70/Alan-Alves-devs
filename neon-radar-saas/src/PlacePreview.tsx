@@ -1,15 +1,19 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {Building2,Camera,ExternalLink,Globe2,Mail,MessageCircle,Navigation,Phone,Instagram,LoaderCircle,ShieldCheck,LockKeyhole,RefreshCw,AlertCircle} from 'lucide-react';
 import type {Place} from './main';
 const safe=(value:string|null|undefined)=>{try{const u=new URL(value||'');return ['https:','http:'].includes(u.protocol)?u.href:null;}catch{return null;}};
 export type Verification={status:'idle'|'checking'|'confirmed'|'partial'|'saved'|'login_required'|'unavailable';checkedAt?:string;source?:string};
 export function PlacePreview({place,loading,note,onLogin,verification,onRetry}:{place:Place;loading:boolean;note:string;onLogin?:()=>void;verification:Verification;onRetry:()=>void}){
  const [photoIndex,setPhotoIndex]=useState(0);
+ const retriedPhoto=useRef(false);
+ useEffect(()=>{retriedPhoto.current=false;},[place.id]);
  const photoKey=JSON.stringify((place.photos||[]).map(p=>p.url));
  useEffect(()=>setPhotoIndex(0),[place.id,photoKey,loading]);
  const photos=(place.photos||[]).filter(p=>safe(p.url));
  const photo=photos[photoIndex],image=safe(photo?.url),site=safe(place.website),instagram=safe(place.instagram);
  const photoError=photoIndex>=photos.length&&photos.length>0;
+ // Expired media links trigger one fresh lookup, never an endless billing loop.
+ useEffect(()=>{if(photoError&&!loading&&!onLogin&&!retriedPhoto.current){retriedPhoto.current=true;onRetry();}},[photoError,loading,onLogin,onRetry]);
  const photoMessage=photoError?'A imagem não abriu. Atualize a prévia para buscar uma foto novamente.':place.photoNote||note||'Este estabelecimento não retornou fotos nesta consulta.';
  const missing=loading?'Consultando...':onLogin?'Entre para consultar':note||place.contactsStatus==='unavailable'?'Não foi possível confirmar agora':'Não localizado na fonte consultada';
  const phone=place.phone?.replace(/[^\d+]/g,'');
@@ -25,7 +29,7 @@ export function PlacePreview({place,loading,note,onLogin,verification,onRetry}:{
    {!loading&&!onLogin&&<button type="button" onClick={onRetry} aria-label="Verificar dados novamente" title="Verificar novamente"><RefreshCw size={17}/></button>}
   </div>
   <div className="place-photo">
-   {image?<img key={image} src={image} alt={`Foto de ${place.name}`} referrerPolicy="no-referrer" onError={()=>setPhotoIndex(index=>index+1)}/>:<div className="place-photo-empty"><Camera size={36}/><strong>{loading?'Buscando foto do estabelecimento...':onLogin?'Entre para consultar a foto':photoError?'Não foi possível abrir a foto':place.photoNote||note?'Foto indisponível nesta consulta':'Nenhuma foto retornada'}</strong><span>{loading?'Aguarde enquanto consultamos a fonte.':photoMessage}</span></div>}
+   {image?<img key={image} src={image} alt={`Foto de ${place.name}`} onError={()=>setPhotoIndex(index=>index+1)}/>:<div className="place-photo-empty"><Camera size={36}/><strong>{loading?'Buscando foto do estabelecimento...':onLogin?'Entre para consultar a foto':photoError?'Não foi possível abrir a foto':place.photoNote||note?'Foto indisponível nesta consulta':'Nenhuma foto retornada'}</strong><span>{loading?'Aguarde enquanto consultamos a fonte.':photoMessage}</span></div>}
    {!loading&&!onLogin&&!image&&<button className="outline-btn" type="button" onClick={onRetry}><RefreshCw size={15}/> Atualizar foto</button>}
    <span className="place-photo-label"><Camera size={13}/> PRÉVIA DO LOCAL</span>
   </div>
