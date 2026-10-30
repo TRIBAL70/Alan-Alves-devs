@@ -1,0 +1,1 @@
+export function fetchGooglePhotos(id:string,key:string,options?:{signal?:AbortSignal;fetcher?:typeof fetch}):Promise<{photos:{url:string;source:string;authors:{name:string;url:string|null}[]}[];returnedPhotoCount:number}>;
