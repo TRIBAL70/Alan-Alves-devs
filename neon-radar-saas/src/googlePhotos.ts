@@ -29,6 +29,8 @@ export async function browserGooglePhotos(place:Place,key:string,signal?:AbortSi
   check();return result;
  }catch(e){
   check();
+  const failure=e as Error&{code?:string};
+  console.warn('[NEON PHOTO]',String(failure.name||'Error'),String(failure.code||''),String(failure.message||'').replace(/AIza[\w-]+/g,'[redacted]').replace(/https?:\/\/\S+/g,'[URL]'));
   return {...place,photos:[],photoNote:'Não foi possível atualizar a foto no Google agora. Confira a autorização da Places API para a chave do mapa.'};
  }finally{clearTimeout(timer);}
 }
